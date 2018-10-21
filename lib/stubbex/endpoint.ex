@@ -35,7 +35,9 @@ defmodule Stubbex.Endpoint do
       body: body
     }
     md5 = md5_input |> Poison.encode! |> :erlang.md5 |> Base.encode16
-    file_path = Path.join([".", request_path, md5])
+    file_path = [".", request_path, md5]
+      |> Path.join
+      |> String.replace("//", "/")
 
     cond do
       Map.has_key?(mappings, md5) ->
@@ -79,7 +81,7 @@ defmodule Stubbex.Endpoint do
     |> HTTPoison.request!(path_to_url(request_path), body, headers)
     |> Map.take([:body, :headers, :status_code])
     # Need to ensure all header names are lowercased, otherwise Phoenix
-    # will put in ts own values for some of the headers, like "Server".
+    # will put in its own values for some of the headers, like "Server".
     |> Map.update!(:headers, &Enum.map(&1, fn {header, value} ->
         {String.downcase(header), value}
       end))
