@@ -5,48 +5,37 @@ defmodule Stubbex.Endpoint do
 
   # Client
 
-  def start_link([], request_path) do
-    GenServer.start_link(
-      __MODULE__,
-      request_path,
-      name: {:global, request_path})
+  def start_link([], url) do
+    GenServer.start_link(__MODULE__, url, name: {:global, url})
   end
 
-  def request(method, request_path, headers \\ [], body \\ "") do
+  def request(method, url, headers \\ [], body \\ "") do
     GenServer.call(
-      {:global, request_path},
+      {:global, url},
       {:request, method, headers, body})
   end
 
   # Server
 
-  def init(request_path) do
+  def init(url) do
     Process.flag :trap_exit, true
-    "." |> Path.join(request_path) |> File.mkdir_p!
-
-    {:ok, {request_path, %{}}}
+    {:ok, {url, %{}}}
   end
 
-  def handle_call({:request, method, headers, body}, _from, {request_path, mappings}) do
-    headers = real_host(headers, request_path)
+  def handle_call({:request, method, headers, body}, _from, {url, mappings}) do
+    headers = real_host(headers, url)
     md5_input = %{
       method: method,
       headers: Enum.into(headers, %{}),
       body: body
     }
     md5 = md5_input |> Poison.encode! |> :erlang.md5 |> Base.encode16
-    file_path = [".", request_path, md5]
-      |> Path.join
-      |> String.replace("//", "/")
+    file_dir = Path.join(".", url_to_path(url))
+    file_path = Path.join(file_dir, md5 <> ".json")
 
     cond do
       Map.has_key?(mappings, md5) ->
-        {
-          :reply,
-          Map.get(mappings, md5),
-          {request_path, mappings},
-          @timeout_ms
-        }
+        {:reply, Map.get(mappings, md5), {url, mappings}, @timeout_ms}
       File.exists?(file_path) ->
         %{"response" => response} =
           file_path |> File.read! |> Poison.decode!
@@ -55,20 +44,21 @@ defmodule Stubbex.Endpoint do
         {
           :reply,
           response,
-          {request_path, Map.put(mappings, md5, response)},
+          {url, Map.put(mappings, md5, response)},
           @timeout_ms
         }
       true ->
-        response = real_request(method, request_path, headers, body)
+        response = real_request(method, url, headers, body)
         file_body = md5_input
           |> Map.put(:response, encode_headers(response))
           |> Poison.encode!
+        File.mkdir_p!(file_dir)
         File.write!(file_path, file_body)
 
         {
           :reply,
           response,
-          {request_path, Map.put(mappings, md5, response)},
+          {url, Map.put(mappings, md5, response)},
           @timeout_ms
         }
     end
@@ -76,21 +66,21 @@ defmodule Stubbex.Endpoint do
 
   def handle_info(:timeout, state), do: {:stop, :timeout, state}
 
-  defp real_request(method, request_path, headers, body) do
+  defp url_to_path(url) do
+    Path.join(
+      "stubs",
+      url |> String.replace("//", "/") |> String.replace(":", ""))
+  end
+
+  defp real_request(method, url, headers, body) do
     method
-    |> HTTPoison.request!(path_to_url(request_path), body, headers)
+    |> HTTPoison.request!(url, body, headers)
     |> Map.take([:body, :headers, :status_code])
     # Need to ensure all header names are lowercased, otherwise Phoenix
     # will put in its own values for some of the headers, like "Server".
     |> Map.update!(:headers, &Enum.map(&1, fn {header, value} ->
         {String.downcase(header), value}
       end))
-  end
-
-  # Convert a Stubbex stub request path to its corresponding real
-  # endpoint URL.
-  defp path_to_url("/stubs/" <> path) do
-    String.replace(path, "/", "://", global: false)
   end
 
   defp encode_headers(response) do
@@ -111,8 +101,8 @@ defmodule Stubbex.Endpoint do
   # Stubbex needs to call real requests with the "Host" header set
   # correctly, because clients calling it set Stubbex as the "Host", e.g.
   # `localhost:4000`.
-  defp real_host(headers, request_path) do
-    %URI{host: host} = request_path |> path_to_url |> URI.parse
+  defp real_host(headers, url) do
+    %URI{host: host} = URI.parse(url)
 
     Enum.map(headers, fn
       {"host", _host} -> {"host", host}
