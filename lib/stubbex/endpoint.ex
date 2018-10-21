@@ -28,7 +28,7 @@ defmodule Stubbex.Endpoint do
   end
 
   def handle_call({:request, method, headers, body}, _from, {request_path, mappings}) do
-    headers = fake_host(headers, request_path)
+    headers = real_host(headers, request_path)
     md5_input = %{
       method: method,
       headers: Enum.into(headers, %{}),
@@ -85,6 +85,8 @@ defmodule Stubbex.Endpoint do
       end))
   end
 
+  # Convert a Stubbex stub request path to its corresponding real
+  # endpoint URL.
   defp path_to_url("/stubs/" <> path) do
     String.replace(path, "/", "://", global: false)
   end
@@ -104,7 +106,10 @@ defmodule Stubbex.Endpoint do
     }
   end
 
-  defp fake_host(headers, request_path) do
+  # Stubbex needs to call real requests with the "Host" header set
+  # correctly, because clients calling it set Stubbex as the "Host", e.g.
+  # `localhost:4000`.
+  defp real_host(headers, request_path) do
     %URI{host: host} = request_path |> path_to_url |> URI.parse
 
     Enum.map(headers, fn
