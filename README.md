@@ -107,3 +107,40 @@ just using the simplest hash I can find, and that's `erlang:md5`.
 
 That said, for testing run-of-the-mill REST APIs with JSON responses,
 Stubbex should be very helpful, even just running on your dev machine.
+
+## Developer Workflow
+
+To use Stubbex as part of your dev workflow, first you'll need a running
+Stubbex instance. The easiest way to get it running is as shown above–but
+you will need to install [Elixir](https://elixir-lang.org/) on your dev
+machine. Alternatively, you might
+[deploy](https://hexdocs.pm/phoenix/deployment.html#content) Stubbex to a
+shared internal server (**WARNING:** by no means expose it to the outside
+world!) and use that for development and testing across multiple
+developer machines and CI builds.
+
+Next, set up a QA/test config in your app that points all the base URLs
+for every service call to Stubbex, e.g.
+`http://localhost:4000/stubs/http/...`. You would use your development
+stack's normal configuration management system here. If you have a
+serious networked app, you likely already have separate endpoints
+configured for QA and PROD. In this case you'd just switch the QA
+endpoints to the stubbed versions, as shown above.
+
+Then, run your app with this QA config and let Stubbex automatically
+capture and replay the stubs for you. The stubs will be available both
+during iterative development and test suite runs as long as they use the
+same QA config.
+
+**WARNING:** don't use Postman or other browser-based tools to make
+requests to Stubbex for the purpose of setting up stubs for later use.
+They may add additional headers beyond your control, and Stubbex's
+response matching is, as mentioned above, sensitive to exact request
+headers. For example, see
+https://github.com/postmanlabs/postman-app-support/issues/443 (a
+five-year old issue wherein Postman sends additional headers in all
+requests). If you want to set up stubs beforehand, you can:
+
+* Hit Stubbex from your app (this is best)
+* Use a tool like `curl` which sends requests exactly as you specify
+* Write the stub files by hand (way less fun).
