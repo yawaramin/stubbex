@@ -9,10 +9,6 @@ defmodule StubbexWeb.Router do
     plug :put_secure_browser_headers
   end
 
-  pipeline :api do
-    plug :accepts, ["json"]
-  end
-
   scope "/", StubbexWeb do
     pipe_through :browser # Use the default browser stack
 
@@ -20,8 +16,6 @@ defmodule StubbexWeb.Router do
   end
 
   scope "/stubs", StubbexWeb do
-    pipe_through :api
-
     match :*, "/*any", StubController, :stub
   end
 end
