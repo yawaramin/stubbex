@@ -28,9 +28,13 @@ specific requests.
 
 ## Automation by Default
 
-Some stub servers require you to manually feed them the stub requests and
-responses. Stubbex automatically gets them by just making the calls to
-real endpoints. If you want to set up stubs manually, you have to place
+Some stub servers require you to configure their proxy strategy, some
+require a bit more hand-holding to record requests, and some require you
+to manually feed them the requests and stub responses. Stubbex requires
+no configuration and tries to 'do the right thing': call out to the real
+endpoints only if it needs to, and replay existing stubs whenever it can.
+
+If you want to set up stubs manually, you have to place
 the stub files in the format that Stubbex expects, at the right location,
 as explained below.
 
@@ -67,8 +71,9 @@ directory structure and a stub file there. Take a look:
     ~/src/stubbex $ less stubs/https/jsonplaceholder.typicode.com/todos/1/505633AE90C4EEC795F044DC9BB3FE58
     {"response":{"status_code":200,"headers"...
 
-The stub is stored in a predictable location in JSON format. You can use
-your favourite JSON pretty-printing tool to view it if you want.
+The stub is stored in a predictable location
+(`stubs/protocol/host/path.../hash`) in JSON format. You can use your
+favourite JSON pretty-printing tool to view it.
 
 ## The Hash
 
@@ -82,6 +87,10 @@ hash of the request details:
 These three details uniquely identify any request _to a given endpoint._
 Stubbex uses this hash to look up the correct response for any request,
 and if it doesn't have it, it will fetch it and save it for next time.
+
+This 'request-addressable' file name allows Stubbex to pick the correct
+response stub for any call without having to open and parse the stub file
+itself. It effectively uses the filesystem as an index data structure.
 
 You might be screaming at me, 'Why MD5?! Why not SHA-1/256/etc.?' The
 thing is, it just doesn't matter that much. This is not a security issue
