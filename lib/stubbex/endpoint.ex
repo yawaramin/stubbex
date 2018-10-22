@@ -1,7 +1,8 @@
 defmodule Stubbex.Endpoint do
   use GenServer
 
-  @timeout_ms 10 * 60 * 1_000 # 10 minutes
+  # How long to wait for requests and responses
+  @timeout_ms 10 * 60 * 1_000
 
   # Client
 
@@ -15,15 +16,14 @@ defmodule Stubbex.Endpoint do
   def request(method, request_path, headers \\ [], body \\ "") do
     GenServer.call(
       {:global, request_path},
-      {:request, method, headers, body})
+      {:request, method, headers, body},
+      @timeout_ms)
   end
 
   # Server
 
   def init(request_path) do
-    Process.flag :trap_exit, true
-    "." |> Path.join(request_path) |> File.mkdir_p!
-
+    Process.flag(:trap_exit, true)
     {:ok, {request_path, %{}}}
   end
 
@@ -63,7 +63,15 @@ defmodule Stubbex.Endpoint do
         file_body = md5_input
           |> Map.put(:response, encode_headers(response))
           |> Poison.encode!
-        File.write!(file_path, file_body)
+
+        with :ok <- "." |> Path.join(request_path) |> File.mkdir_p,
+             :ok <- File.write(file_path, file_body) do
+          nil
+        else
+          {:error, _posix} ->
+            require Logger
+            Logger.warn(["Could not write stub file", file_path])
+        end
 
         {
           :reply,
@@ -74,11 +82,17 @@ defmodule Stubbex.Endpoint do
     end
   end
 
-  def handle_info(:timeout, state), do: {:stop, :timeout, state}
+  @doc "Go out as quietly as possible."
+  def handle_info(:timeout, _state), do: {:stop, :timeout, nil}
 
   defp real_request(method, request_path, headers, body) do
     method
-    |> HTTPoison.request!(path_to_url(request_path), body, headers)
+    |> HTTPoison.request!(
+      path_to_url(request_path),
+      body,
+      headers,
+      # See https://github.com/edgurgel/httpoison/issues/294 for more
+      ssl: [cacertfile: Application.get_env(:stubbex, :cert_pem)])
     |> Map.take([:body, :headers, :status_code])
     # Need to ensure all header names are lowercased, otherwise Phoenix
     # will put in its own values for some of the headers, like "Server".

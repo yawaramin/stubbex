@@ -5,6 +5,11 @@
 # is restricted to this project.
 use Mix.Config
 
+config :stubbex,
+  # Apparently HTTPoison and hackney don't ship with root SSL
+  # certificates, so we need to reach out to the system's root cert.
+  cert_pem: System.get_env("stubbex_cert_pem") || "/etc/ssl/cert.pem"
+
 # Configures the endpoint
 config :stubbex, StubbexWeb.Endpoint,
   url: [host: "localhost"],

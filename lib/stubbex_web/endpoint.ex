@@ -20,9 +20,6 @@ defmodule StubbexWeb.Endpoint do
   end
 
   plug Plug.Logger
-
-  plug Plug.Parsers, parsers: [:urlencoded], pass: ["*/*"]
-
   plug Plug.MethodOverride
   plug Plug.Head
 
