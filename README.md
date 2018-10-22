@@ -1,4 +1,4 @@
-# Stubbex
+# Stubbex–stub any host, any endpoint
 
 This is a stub server, like Mountebank or Wiremock. Its purpose is to
 automatically record, save, and reply with responses from real endpoints
@@ -95,18 +95,7 @@ itself. It effectively uses the filesystem as an index data structure.
 You might be screaming at me, 'Why MD5?! Why not SHA-1/256/etc.?' The
 thing is, it just doesn't matter that much. This is not a security issue
 right now. If it ever looks like one, I'll change the hash. Right now I'm
-just using the simplest hash I can find, and that's `erlang:md5`.
-
-## Limitations
-
-* No tests right now
-* No documentation right now (other than the above)
-* No benchmarks right now
-* Stubbex can't handle chunked responses right now
-* Can't configure where to save the stubs right now
-
-That said, for testing run-of-the-mill REST APIs with JSON responses,
-Stubbex should be very helpful, even just running on your dev machine.
+just using the simplest widely-available hash I can find, and that's MD5.
 
 ## Developer Workflow
 
@@ -144,3 +133,14 @@ requests). If you want to set up stubs beforehand, you can:
 * Hit Stubbex from your app (this is best)
 * Use a tool like `curl` which sends requests exactly as you specify
 * Write the stub files by hand (way less fun).
+
+## Limitations
+
+* No tests right now
+* No documentation right now (other than the above)
+* No benchmarks right now
+* Stubbex can't handle chunked responses right now
+* Can't configure where to save the stubs right now
+
+That said, for testing run-of-the-mill REST APIs with JSON responses,
+Stubbex should be very helpful, even just running on your dev machine.
