@@ -6,15 +6,15 @@ defmodule Stubbex.Dispatcher do
     DynamicSupervisor.start_link(__MODULE__, [], name: __MODULE__)
   end
 
-  def request(method, url, headers, body) do
-    start_endpoint(url)
-    Endpoint.request(method, url, headers, body)
+  def dispatch(method, request_path, headers, body) do
+    start_endpoint(request_path)
+    Endpoint.request(method, request_path, headers, body)
   end
 
-  defp start_endpoint(url) do
+  defp start_endpoint(request_path) do
     DynamicSupervisor.start_child(__MODULE__, %{
-      id: url,
-      start: {Endpoint, :start_link, [url]},
+      id: request_path,
+      start: {Endpoint, :start_link, [request_path]},
       restart: :temporary
     })
   end

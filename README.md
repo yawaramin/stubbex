@@ -1,4 +1,4 @@
-# Stubbex–stub any host, any endpoint
+# Stubbex
 
 This is a stub server, like Mountebank or Wiremock. Its purpose is to
 automatically record, save, and reply with responses from real endpoints
@@ -49,7 +49,7 @@ Stubbex:
 
 Then, send it a request:
 
-    ~/src $ curl localhost:4000/stubs/https://jsonplaceholder.typicode.com/todos/1
+    ~/src $ curl localhost:4000/stubs/https/jsonplaceholder.typicode.com/todos/1
     {
       "userId": 1,
       "id": 1,
@@ -57,19 +57,23 @@ Then, send it a request:
       "completed": false
     }
 
-Notice the simple and predictable way to get the stub URL from the real
-URL: just prefix the real URL with your Stubbex instance's `/stubs/`
-path. This makes it easy to configure real and test/QA/etc. endpoints.
+Notice the completely mechanical translation from the real URL to the
+stub URL. You can probably guess how it works:
+
+* Prefix with `localhost:4000/stubs/`
+* Remove the `:/`
+* That's it, now you have the stub URL. This makes it reasonably easy to
+  configure real and test/QA/etc. endpoints.
 
 Now, check the `~/src/stubbex/stubs` subdirectory. There's a new
 directory structure and a stub file there. Take a look:
 
-    ~/src/stubbex $ less stubs/https/jsonplaceholder.typicode.com/todos/1/505633AE90C4EEC795F044DC9BB3FE58.json
+    ~/src/stubbex $ less stubs/https/jsonplaceholder.typicode.com/todos/1/505633AE90C4EEC795F044DC9BB3FE58
     {"response":{"status_code":200,"headers"...
 
 The stub is stored in a predictable location
-(`stubs/protocol/host/path.../hash.json`). You can use your favourite
-JSON pretty-printing tool to view it.
+(`stubs/protocol/host/path.../hash`) in JSON format. You can use your
+favourite JSON pretty-printing tool to view it.
 
 ## The Hash
 
@@ -91,7 +95,18 @@ itself. It effectively uses the filesystem as an index data structure.
 You might be screaming at me, 'Why MD5?! Why not SHA-1/256/etc.?' The
 thing is, it just doesn't matter that much. This is not a security issue
 right now. If it ever looks like one, I'll change the hash. Right now I'm
-just using the simplest widely-available hash I can find, and that's MD5.
+just using the simplest hash I can find, and that's `erlang:md5`.
+
+## Limitations
+
+* No tests right now
+* No documentation right now (other than the above)
+* No benchmarks right now
+* Stubbex can't handle chunked responses right now
+* Can't configure where to save the stubs right now
+
+That said, for testing run-of-the-mill REST APIs with JSON responses,
+Stubbex should be very helpful, even just running on your dev machine.
 
 ## Developer Workflow
 
@@ -106,7 +121,7 @@ developer machines and CI builds.
 
 Next, set up a QA/test config in your app that points all the base URLs
 for every service call to Stubbex, e.g.
-`http://localhost:4000/stubs/http://...`. You would use your development
+`http://localhost:4000/stubs/http/...`. You would use your development
 stack's normal configuration management system here. If you have a
 serious networked app, you likely already have separate endpoints
 configured for QA and PROD. In this case you'd just switch the QA
@@ -129,15 +144,3 @@ requests). If you want to set up stubs beforehand, you can:
 * Hit Stubbex from your app (this is best)
 * Use a tool like `curl` which sends requests exactly as you specify
 * Write the stub files by hand (way less fun).
-
-## Limitations
-
-* No tests right now
-* No documentation right now (other than the above)
-* No benchmarks right now
-* Stubbex can't handle chunked responses right now
-* Can't configure where to save the stubs right now
-
-That said, for testing run-of-the-mill REST APIs with JSON responses,
-Stubbex should be very helpful, even just running on your dev machine.
-
