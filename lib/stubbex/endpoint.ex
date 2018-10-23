@@ -60,17 +60,17 @@ defmodule Stubbex.Endpoint do
         }
       true ->
         response = real_request(method, request_path, headers, body)
-        file_body = md5_input
-          |> Map.put(:response, encode_headers(response))
-          |> Poison.encode!
 
-        with :ok <- "." |> Path.join(request_path) |> File.mkdir_p,
-             :ok <- File.write(file_path, file_body) do
+        with {:ok, file_body} <- md5_input
+          |> Map.put(:response, encode_headers(response))
+          |> Poison.encode_to_iodata,
+          :ok <- "." |> Path.join(request_path) |> File.mkdir_p,
+          :ok <- File.write(file_path, file_body) do
           nil
         else
-          {:error, _posix} ->
+          {:error, _any} ->
             require Logger
-            Logger.warn(["Could not write stub file", file_path])
+            Logger.warn(["Could not write stub file: ", file_path])
         end
 
         {
