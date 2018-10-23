@@ -82,8 +82,10 @@ defmodule Stubbex.Endpoint do
     end
   end
 
-  @doc "Go out as quietly as possible."
-  def handle_info(:timeout, _state), do: {:stop, :timeout, nil}
+  @doc "Go out with an explanation."
+  def handle_info(:timeout, _state) do
+    {:stop, :timeout, "normal shutdown due to inactivity."}
+  end
 
   defp real_request(method, request_path, headers, body) do
     method
