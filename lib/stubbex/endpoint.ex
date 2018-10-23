@@ -88,19 +88,31 @@ defmodule Stubbex.Endpoint do
   end
 
   defp real_request(method, request_path, headers, body) do
-    method
-    |> HTTPoison.request!(
+    %HTTPoison.Response{
+      body: body,
+      headers: headers,
+      status_code: status_code
+    } = HTTPoison.request!(
+      method,
       path_to_url(request_path),
       body,
       headers,
       # See https://github.com/edgurgel/httpoison/issues/294 for more
       ssl: [cacertfile: Application.get_env(:stubbex, :cert_pem)])
-    |> Map.take([:body, :headers, :status_code])
-    # Need to ensure all header names are lowercased, otherwise Phoenix
-    # will put in its own values for some of the headers, like "Server".
-    |> Map.update!(:headers, &Enum.map(&1, fn {header, value} ->
-        {String.downcase(header), value}
-      end))
+
+    headers = Enum.flat_map(headers, fn
+      # Get rid of "Transfer-Encoding: chunked" header because HTTPoison
+      # is accumulating the entire response body anyway, so it wouldn't
+      # be correct to send an entire response body with this header back
+      # to our client.
+      {"Transfer-Encoding", "chunked"} -> []
+      # Need to ensure all header names are lowercased, otherwise Phoenix
+      # will put in its own values for some of the headers, like
+      # "Server".
+      {header, value} -> [{String.downcase(header), value}]
+    end)
+
+    %{body: body, headers: headers, status_code: status_code}
   end
 
   # Convert a Stubbex stub request path to its corresponding real
