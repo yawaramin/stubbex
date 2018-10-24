@@ -27,6 +27,8 @@ defmodule Stubbex.Endpoint do
   end
 
   def handle_call({:request, method, headers, body}, _from, {request_path, mappings}) do
+    alias Stubbex.Response
+
     headers = real_host(headers, request_path)
     md5_input = %{
       method: method,
@@ -49,7 +51,7 @@ defmodule Stubbex.Endpoint do
       File.exists?(file_path) ->
         %{"response" => response} =
           file_path |> File.read! |> Poison.decode!
-        response = decode_response(response)
+        response = Response.decode(response)
 
         {
           :reply,
@@ -61,7 +63,7 @@ defmodule Stubbex.Endpoint do
         response = real_request(method, request_path, headers, body)
 
         with {:ok, file_body} <- md5_input
-          |> Map.put(:response, encode_headers(response))
+          |> Map.put(:response, Response.encode(response))
           |> Poison.encode_to_iodata,
           :ok <- "." |> Path.join(request_path) |> File.mkdir_p,
           :ok <- File.write(file_path, file_body) do
@@ -119,21 +121,6 @@ defmodule Stubbex.Endpoint do
   # endpoint URL.
   defp path_to_url("/stubs/" <> path) do
     String.replace(path, "/", "://", global: false)
-  end
-
-  defp encode_headers(response) do
-    update_in(response.headers, &Enum.into(&1, %{}))
-  end
-
-  # The response is stored in the stub file in JSON format, so when we
-  # read it back to respond to a stub request, we need to convert it back
-  # to a format the client will understand.
-  defp decode_response(response) do
-    %{
-      status_code: response["status_code"],
-      headers: Map.to_list(response["headers"]),
-      body: response["body"]
-    }
   end
 
   # Stubbex needs to call real requests with the "Host" header set
