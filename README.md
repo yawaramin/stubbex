@@ -46,7 +46,7 @@ Stubbex:
 
 ```
 ~/src/stubbex $ mix deps.get # First time only
-              $ export stubbex_cert_pem=/path/to/cert.pem # If it's not in /etc/ssl. Needed for HTTPS requests
+              $ export stubbex_cert_pem=/path/to/cert.pem # If it's not in /etc/ssl. (May be) needed for HTTPS requests
               $ export stubbex_timeout_ms=10000 # Optional, default is 10 minutes
               $ mix phx.server # Run the stub server
 ```
@@ -145,8 +145,7 @@ requests). If you want to set up stubs beforehand, you can:
 * No tests right now
 * No documentation right now (other than the above)
 * No benchmarks right now
-* Stubbex can't handle chunked responses right now
 * Can't configure where to save the stubs right now
 
 That said, for testing run-of-the-mill REST APIs with JSON responses,
-Stubbex should be very helpful, even just running on your dev machine.
+Stubbex is very helpful, even just running on your dev machine.
