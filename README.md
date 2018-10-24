@@ -44,19 +44,24 @@ Suppose you want to stub the response from a JSON Placeholder URL,
 https://jsonplaceholder.typicode.com/todos/1 . First, you start up
 Stubbex:
 
-    ~/src/stubbex $ mix deps.get # First time only
-    ~/src/stubbex $ export stubbex_cert_pem=/path/to/cert.pem # If it's not in /etc/ssl. Needed for HTTPS requests
-    ~/src/stubbex $ mix phx.server # Run the stub server
+```
+~/src/stubbex $ mix deps.get # First time only
+              $ export stubbex_cert_pem=/path/to/cert.pem # If it's not in /etc/ssl. Needed for HTTPS requests
+              $ export stubbex_timeout_ms=10000 # Optional, default is 10 minutes
+              $ mix phx.server # Run the stub server
+```
 
 Then, send it a request:
 
-    ~/src $ curl localhost:4000/stubs/https/jsonplaceholder.typicode.com/todos/1
-    {
-      "userId": 1,
-      "id": 1,
-      "title": "delectus aut autem",
-      "completed": false
-    }
+```
+~/src $ curl localhost:4000/stubs/https/jsonplaceholder.typicode.com/todos/1
+{
+  "userId": 1,
+  "id": 1,
+  "title": "delectus aut autem",
+  "completed": false
+}
+```
 
 Notice the completely mechanical translation from the real URL to the
 stub URL. You can probably guess how it works:

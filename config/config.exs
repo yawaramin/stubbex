@@ -8,7 +8,10 @@ use Mix.Config
 config :stubbex,
   # Apparently HTTPoison and hackney don't ship with root SSL
   # certificates, so we need to reach out to the system's root cert.
-  cert_pem: System.get_env("stubbex_cert_pem") || "/etc/ssl/cert.pem"
+  cert_pem: System.get_env("stubbex_cert_pem") || "/etc/ssl/cert.pem",
+  # How long should Stubbex wait for requests and responses?
+  timeout_ms: String.to_integer(
+    System.get_env("stubbex_timeout_ms") || "6000000")
 
 # Configures the endpoint
 config :stubbex, StubbexWeb.Endpoint,

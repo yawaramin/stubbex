@@ -1,8 +1,7 @@
 defmodule Stubbex.Endpoint do
   use GenServer
 
-  # How long to wait for requests and responses
-  @timeout_ms 10 * 60 * 1_000
+  @timeout_ms Application.get_env(:stubbex, :timeout_ms)
 
   # Client
 
@@ -97,6 +96,7 @@ defmodule Stubbex.Endpoint do
       path_to_url(request_path),
       body,
       headers,
+      timeout: @timeout_ms,
       # See https://github.com/edgurgel/httpoison/issues/294 for more
       ssl: [cacertfile: Application.get_env(:stubbex, :cert_pem)])
 
