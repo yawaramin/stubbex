@@ -11,7 +11,7 @@ config :stubbex,
   cert_pem: System.get_env("stubbex_cert_pem") || "/etc/ssl/cert.pem",
   # How long should Stubbex wait for requests and responses?
   timeout_ms: String.to_integer(
-    System.get_env("stubbex_timeout_ms") || "6000000")
+    System.get_env("stubbex_timeout_ms") || "600000")
 
 # Configures the endpoint
 config :stubbex, StubbexWeb.Endpoint,
