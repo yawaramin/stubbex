@@ -1,8 +1,9 @@
 defmodule StubbexWeb.StubController do
   use StubbexWeb, :controller
-  alias Stubbex.Dispatcher
 
   def stub(conn, _params) do
+    alias Stubbex.Dispatcher
+
     {:ok, body, conn} = read_body(conn)
     request_path = request_query(conn.request_path, conn.query_string)
     %{body: body, headers: headers, status_code: status_code} =

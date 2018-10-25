@@ -35,20 +35,21 @@ defmodule Stubbex.Endpoint do
       headers: Enum.into(headers, %{}),
       body: body
     }
-    md5 = md5_input |> Poison.encode! |> :erlang.md5 |> Base.encode16
-    file_path = [".", request_path, md5]
-      |> Path.join
-      |> String.replace("//", "/")
 
-    cond do
-      Map.has_key?(mappings, md5) ->
-        {
-          :reply,
-          Map.get(mappings, md5),
-          {request_path, mappings},
-          @timeout_ms
-        }
-      File.exists?(file_path) ->
+    if Map.has_key?(mappings, md5_input) do
+      {
+        :reply,
+        Map.get(mappings, md5_input),
+        {request_path, mappings},
+        @timeout_ms
+      }
+    else
+      md5 = md5_input |> Poison.encode! |> :erlang.md5 |> Base.encode16
+      file_path = [".", request_path, md5]
+        |> Path.join
+        |> String.replace("//", "/")
+
+      if File.exists?(file_path) do
         %{"response" => response} =
           file_path |> File.read! |> Poison.decode!
         response = Response.decode(response)
@@ -56,10 +57,10 @@ defmodule Stubbex.Endpoint do
         {
           :reply,
           response,
-          {request_path, Map.put(mappings, md5, response)},
+          {request_path, Map.put(mappings, md5_input, response)},
           @timeout_ms
         }
-      true ->
+      else
         response = real_request(method, request_path, headers, body)
 
         with {:ok, file_body} <- md5_input
@@ -77,15 +78,16 @@ defmodule Stubbex.Endpoint do
         {
           :reply,
           response,
-          {request_path, Map.put(mappings, md5, response)},
+          {request_path, Map.put(mappings, md5_input, response)},
           @timeout_ms
         }
+      end
     end
   end
 
   @doc "Go out with an explanation."
   def handle_info(:timeout, _state) do
-    {:stop, :timeout, "normal shutdown due to inactivity."}
+    {:stop, :timeout, "This stub is now dormant due to inactivity."}
   end
 
   defp real_request(method, request_path, headers, body) do
