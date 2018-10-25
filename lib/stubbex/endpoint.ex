@@ -27,8 +27,6 @@ defmodule Stubbex.Endpoint do
   end
 
   def handle_call({:request, method, headers, body}, _from, {request_path, mappings}) do
-    alias Stubbex.Response
-
     headers = real_host(headers, request_path)
     md5_input = %{
       method: method,
@@ -44,6 +42,8 @@ defmodule Stubbex.Endpoint do
         @timeout_ms
       }
     else
+      alias Stubbex.Response
+
       md5 = md5_input |> Poison.encode! |> :erlang.md5 |> Base.encode16
       file_path = [".", request_path, md5]
         |> Path.join

@@ -6,9 +6,8 @@ defmodule Stubbex.Response do
 
   @content_gzip {"content-encoding", "gzip"}
 
-  def encode(%{status_code: status_code, headers: headers, body: body}) do
-    %{
-      status_code: status_code,
+  def encode(%{headers: headers, body: body} = response) do
+    %{response |
       headers: Enum.into(headers, %{}),
       body: if @content_gzip in headers do
         Base.encode64(body)
