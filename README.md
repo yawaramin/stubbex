@@ -74,17 +74,17 @@ stub URL. You can probably guess how it works:
 Now, check the `~/src/stubbex/stubs` subdirectory. There's a new
 directory structure and a stub file there. Take a look:
 
-    ~/src/stubbex $ less stubs/https/jsonplaceholder.typicode.com/todos/1/505633AE90C4EEC795F044DC9BB3FE58
+    ~/src/stubbex $ less stubs/https/jsonplaceholder.typicode.com/todos/1/505633AE90C4EEC795F044DC9BB3FE58.json
     {"response":{"status_code":200,"headers"...
 
 The stub is stored in a predictable location
-(`stubs/protocol/host/path.../hash`) in JSON format. You can use your
-favourite JSON pretty-printing tool to view it.
+(`stubs/protocol/host/path.../hash.json`). You can use your favourite
+JSON pretty-printing tool to view it.
 
 ## The Hash
 
-Notice the file name of the stub, `505633AE...`. That's an MD5-encoded
-hash of the request details:
+Notice the file name of the stub, `505633AE....json`. That's an
+MD5-encoded hash of the request details:
 
 * Method (GET, POST, etc.)
 * Headers

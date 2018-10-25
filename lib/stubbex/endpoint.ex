@@ -44,10 +44,13 @@ defmodule Stubbex.Endpoint do
     else
       alias Stubbex.Response
 
-      md5 = md5_input |> Poison.encode! |> :erlang.md5 |> Base.encode16
-      file_path = [".", request_path, md5]
+      file_path = (
+        md5 = md5_input |> Poison.encode! |> :erlang.md5 |> Base.encode16
+
+        [".", request_path, md5 <> ".json"]
         |> Path.join
         |> String.replace("//", "/")
+      )
 
       if File.exists?(file_path) do
         %{"response" => response} =
@@ -100,7 +103,7 @@ defmodule Stubbex.Endpoint do
       path_to_url(request_path),
       body,
       headers,
-      timeout: @timeout_ms,
+      recv_timeout: @timeout_ms,
       # See https://github.com/edgurgel/httpoison/issues/294 for more
       ssl: [cacertfile: Application.get_env(:stubbex, :cert_pem)])
 
