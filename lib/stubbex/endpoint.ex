@@ -1,5 +1,6 @@
 defmodule Stubbex.Endpoint do
   use GenServer
+  require Logger
 
   @timeout_ms Application.get_env(:stubbex, :timeout_ms)
 
@@ -12,10 +13,10 @@ defmodule Stubbex.Endpoint do
       name: {:global, request_path})
   end
 
-  def request(method, request_path, headers \\ [], body \\ "") do
+  def request(method, request_path, query_string \\ "", headers \\ [], body \\ "") do
     GenServer.call(
       {:global, request_path},
-      {:request, method, headers, body},
+      {:request, method, query_string, headers, body},
       @timeout_ms)
   end
 
@@ -26,10 +27,11 @@ defmodule Stubbex.Endpoint do
     {:ok, {request_path, %{}}}
   end
 
-  def handle_call({:request, method, headers, body}, _from, {request_path, mappings}) do
+  def handle_call({:request, method, query_string, headers, body}, _from, {request_path, mappings}) do
     headers = real_host(headers, request_path)
     md5_input = %{
       method: method,
+      query_string: query_string,
       headers: Enum.into(headers, %{}),
       body: body
     }
@@ -64,7 +66,11 @@ defmodule Stubbex.Endpoint do
           @timeout_ms
         }
       else
-        response = real_request(method, request_path, headers, body)
+        response = real_request(
+          method,
+          request_path <> "?" <> query_string,
+          headers,
+          body)
 
         with {:ok, file_body} <- md5_input
           |> Map.put(:response, Response.encode(response))
@@ -73,9 +79,13 @@ defmodule Stubbex.Endpoint do
           :ok <- File.write(file_path, file_body) do
           nil
         else
-          {:error, _any} ->
-            require Logger
-            Logger.warn(["Could not write stub file: ", file_path])
+          {:error, reason} ->
+            Logger.warn([
+              "Could not write stub file: ",
+              file_path,
+              ", because: ",
+              inspect(reason)
+            ])
         end
 
         {
@@ -94,6 +104,8 @@ defmodule Stubbex.Endpoint do
   end
 
   defp real_request(method, request_path, headers, body) do
+    Logger.debug(["Headers: ", inspect(headers)])
+
     %HTTPoison.Response{
       body: body,
       headers: headers,

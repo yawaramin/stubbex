@@ -26,6 +26,9 @@ config :logger, :console,
   format: "$time $metadata[$level] $message\n",
   metadata: [:user_id]
 
+# Cloudflare and others use 520 as a 'catch-all' error response.
+config :plug, :statuses, %{520 => "Unknown error"}
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{Mix.env}.exs"

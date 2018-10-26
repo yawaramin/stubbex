@@ -6,9 +6,9 @@ defmodule Stubbex.Dispatcher do
     DynamicSupervisor.start_link(__MODULE__, [], name: __MODULE__)
   end
 
-  def dispatch(method, request_path, headers, body) do
+  def dispatch(method, request_path, query_string, headers, body) do
     start_endpoint(request_path)
-    Endpoint.request(method, request_path, headers, body)
+    Endpoint.request(method, request_path, query_string, headers, body)
   end
 
   defp start_endpoint(request_path) do
