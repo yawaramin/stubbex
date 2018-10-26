@@ -5,13 +5,15 @@ defmodule StubbexWeb.StubController do
     alias Stubbex.Dispatcher
 
     {:ok, body, conn} = read_body(conn)
+
     %{body: body, headers: headers, status_code: status_code} =
       Dispatcher.dispatch(
         conn.method,
         conn.request_path,
         conn.query_string,
         conn.req_headers,
-        body)
+        body
+      )
 
     conn
     |> merge_resp_headers(headers)

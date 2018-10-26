@@ -7,13 +7,15 @@ defmodule Stubbex.Response do
   @content_gzip {"content-encoding", "gzip"}
 
   def encode(%{headers: headers, body: body} = response) do
-    %{response |
-      headers: Enum.into(headers, %{}),
-      body: if @content_gzip in headers do
-        Base.encode64(body)
-      else
-        body
-      end
+    %{
+      response
+      | headers: Enum.into(headers, %{}),
+        body:
+          if @content_gzip in headers do
+            Base.encode64(body)
+          else
+            body
+          end
     }
   end
 
@@ -21,11 +23,12 @@ defmodule Stubbex.Response do
     %{
       status_code: status_code,
       headers: Map.to_list(headers),
-      body: if @content_gzip in headers do
-        Base.decode64!(body)
-      else
-        body
-      end
+      body:
+        if @content_gzip in headers do
+          Base.decode64!(body)
+        else
+          body
+        end
     }
   end
 end

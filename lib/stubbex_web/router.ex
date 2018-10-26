@@ -10,7 +10,8 @@ defmodule StubbexWeb.Router do
   end
 
   scope "/", StubbexWeb do
-    pipe_through :browser # Use the default browser stack
+    # Use the default browser stack
+    pipe_through :browser
 
     get "/", PageController, :index
   end

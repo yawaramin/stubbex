@@ -23,6 +23,7 @@ defmodule Stubbex.Dispatcher do
   def init(args) do
     DynamicSupervisor.init(
       strategy: :one_for_one,
-      extra_arguments: [args])
+      extra_arguments: [args]
+    )
   end
 end
