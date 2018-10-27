@@ -51,9 +51,11 @@ defmodule Stubbex.Endpoint do
 
     cond do
       File.exists?(file_path_eex) ->
+        url = path_to_url(request_path)
+
         %{"response" => response} =
           file_path_eex
-          |> EEx.eval_file()
+          |> EEx.eval_file([{:url, url} | Map.to_list(md5_input)])
           |> Poison.decode!()
 
         response =
@@ -78,7 +80,7 @@ defmodule Stubbex.Endpoint do
         reply_update(response, request_path, mappings, md5_input)
 
       true ->
-        response = real_request(method, request_path <> "?" <> query_string, headers, body)
+        response = real_request(method, request_path, query_string, headers, body)
 
         with {:ok, file_body} <-
                md5_input
@@ -115,7 +117,7 @@ defmodule Stubbex.Endpoint do
     }
   end
 
-  defp real_request(method, request_path, headers, body) do
+  defp real_request(method, request_path, query_string, headers, body) do
     Logger.debug(["Headers: ", inspect(headers)])
 
     %HTTPoison.Response{
@@ -125,7 +127,7 @@ defmodule Stubbex.Endpoint do
     } =
       HTTPoison.request!(
         method,
-        path_to_url(request_path),
+        url_query(request_path, query_string),
         body,
         headers,
         recv_timeout: @timeout_ms,
@@ -152,8 +154,12 @@ defmodule Stubbex.Endpoint do
     %{body: body, headers: headers, status_code: status_code}
   end
 
-  # Convert a Stubbex stub request path to its corresponding real
-  # endpoint URL.
+  defp url_query(request_path, ""), do: path_to_url(request_path)
+
+  defp url_query(request_path, query_string) do
+    path_to_url(request_path) <> "?" <> query_string
+  end
+
   defp path_to_url("/stubs/" <> path) do
     String.replace(path, "/", "://", global: false)
   end

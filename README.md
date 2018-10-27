@@ -1,11 +1,28 @@
-# Stubbex–stub any host, any endpoint
+# Stubbex–stub and template with ease
 
 This is a stub server, like Mountebank or Wiremock. Its purpose is to
 automatically record, save, and reply with responses from real endpoints
-whenever you try to hit the stub endpoint. Essentially, it's a cache at
-the granularity of every endpoint for any host.
+whenever you try to hit the stub endpoint, optionally with interpolation
+from template stubs that you control. Essentially, it's a cache at the
+granularity of every endpoint for any host.
 
 What sets Stubbex apart (in my opinion) are three things:
+
+## Emphasis on Simplicity
+
+The Stubbex philosophy is to do everything with as little configuration
+as possible–typically zero config. Every stub server I've come across
+requires a configuration file, or some HTTP commands, or a unit-test
+framework, to tell it what to do.
+
+Stubbex requires no configuration and tries to 'do the right thing':
+call out to the real endpoints only if it needs to, and replay existing
+stubs whenever it can.
+
+If you want to set up stubs manually, you have to place the stub files in
+the format that Stubbex expects, at the right location, as explained
+below. However, you can also take advantage of Stubbex's initial
+recording ability to edit already-existing stub files in place.
 
 ## Concurrency
 
@@ -25,18 +42,6 @@ POST, etc.), URLs, query parameters, request headers if any, and request
 body if any. You can get it to save and give you a response with complete
 precision. So you can stub any number of different hosts, endpoints, and
 specific requests.
-
-## Automation by Default
-
-Some stub servers require you to configure their proxy strategy, some
-require a bit more hand-holding to record requests, and some require you
-to manually feed them the requests and stub responses. Stubbex requires
-no configuration and tries to 'do the right thing': call out to the real
-endpoints only if it needs to, and replay existing stubs whenever it can.
-
-If you want to set up stubs manually, you have to place
-the stub files in the format that Stubbex expects, at the right location,
-as explained below.
 
 ## Example
 
@@ -68,29 +73,35 @@ stub URL. You can probably guess how it works:
 
 * Prefix with `localhost:4000/stubs/`
 * Remove the `:/`
-* That's it, now you have the stub URL. This makes it reasonably easy to
+* That's it, you now have the stub URL. This makes it pretty easy to
   configure real and test/QA/etc. endpoints.
 
 Now, check the `~/src/stubbex/stubs` subdirectory. There's a new
 directory structure and a stub file there. Take a look:
 
-    ~/src/stubbex $ less stubs/https/jsonplaceholder.typicode.com/todos/1/505633AE90C4EEC795F044DC9BB3FE58.json
-    {"response":{"status_code":200,"headers"...
+```
+~/src/stubbex $ less stubs/https/jsonplaceholder.typicode.com/todos/1/E406D55E4DBB26C8050FCDC3D20B7CAA.json
+{
+  "response": {
+    "status_code": 200,
+    "headers": {...
+```
 
 The stub is stored in a predictable location
 (`stubs/protocol/host/path.../hash.json`) and is pretty-printed for your
-viewing pleasure!
+viewing pleasure.
 
 ## The Hash
 
-Notice the file name of the stub, `505633AE....json`. That's an
-MD5-encoded hash of the request details:
+Notice the file name of the stub, `E406D55E....json`. That's an MD5-
+encoded hash of the request details:
 
 * Method (GET, POST, etc.)
+* Query parameters
 * Headers
 * Body
 
-These three details uniquely identify any request _to a given endpoint._
+These four details uniquely identify any request _to a given endpoint._
 Stubbex uses this hash to look up the correct response for any request,
 and if it doesn't have it, it will fetch it and save it for next time.
 
@@ -99,9 +110,10 @@ response stub for any call without having to open and parse the stub file
 itself. It effectively uses the filesystem as an index data structure.
 
 You might be screaming at me, 'Why MD5?! Why not SHA-1/256/etc.?' The
-thing is, it just doesn't matter that much. This is not a security issue
-right now. If it ever looks like one, I'll change the hash. Right now I'm
-just using the simplest widely-available hash I can find, and that's MD5.
+thing is, mapping a request to a simple file name for an internal-use
+tool is not a security-sensitive application. In fact, if people can
+easily reverse-derive the request parameters from the MD5 hash, that
+makes Stubbex potentially even more interoperable with other tools.
 
 ## Developer Workflow
 
@@ -145,38 +157,76 @@ requests). If you want to set up stubs beforehand, you can:
 You can template response stub files and Stubbex will immediately pick up
 changes to the stubs and start serving on-the-fly evaluated responses.
 Templates are named like `hash.json.eex` (they are [Embedded
-Elixir](https://hexdocs.pm/eex/EEx.html#module-tags) files) and can, for
-now, contain valid Elixir language expressions (coming soon: bindings to
-request parameters). If you have a template like
+Elixir](https://hexdocs.pm/eex/EEx.html#module-tags) files) and can
+contain any valid Elixir language expression as well as refer to
+request parameters. If you have a template like
 `stubs/https/jsonplaceholder.typicode.com/todos/1/E406D55E4DBB26C8050FCDC3D20B7CAA.json.eex`,
 you can edit it with your favourite text editor and insert valid
-expressions according to the rules of EEx. For example, the above stub by
+markup according to the rules of EEx. For example, the above stub by
 default has a body like this:
 
 ```
 "body": "{\n  \"userId\": 1,\n  \"id\": 1,\n  \"title\": \"delectus aut autem\",\n  \"completed\": false\n}"
 ```
 
-You can set it to be automatically completed if we're past 2017:
+You can set the todo to be automatically completed if we're past 2017:
 
 ```
 "body": "{\n  \"userId\": 1,\n  \"id\": 1,\n  \"title\": \"delectus aut autem\",\n  \"completed\": <%= DateTime.utc_now().year > 2017 %>\n}"
 ```
 
+Or you can use the user-agent header as part of the todo title:
+
+```
+"body": "{\n  \"userId\": 1,\n  \"id\": 1,\n  \"title\": \"User agent: <%= headers["user-agent"] %>\",\n  \"completed\": false\n}"
+```
+
 Then if you get the response again (with the `curl` command in
-[Example]), you'll see that the `completed` attribute is set to `true`
-(assuming your year is past 2017).
+[Example](#example)), you'll see that the `completed` attribute is set to
+`true` (assuming your year is past 2017); or that the todo title is
+`User agent: curl/7.54.0` (e.g.), or any other result, depending on which
+markup you put in place.
+
+Request parameters are available under the following names:
+
+* `url`: string
+* `query_string`: string
+* `method`: string
+* `headers`: map of string keys (header names) to string values; you can
+  get values with `headers["header-name"]` (all lowercase) syntax
+* `body`: string
 
 There are many other useful data manipulation functions in the [Elixir
 standard library](https://hexdocs.pm/elixir/api-reference.html#content),
 which can all be used as part of the EEx templates. This is of course in
-addition to all the normal language features you'd expect from a
-language, like arithmetic, looping and branching logic, etc.
+addition to all the normal features you'd expect from a language, like
+arithmetic, looping and branching logic, etc. I recommend taking a look
+at the Embedded Elixir link above; it has a five-minute crash course on
+the template markup.
 
-You may be thinking, how should you get a stub in the first place, to
-start editing? Simple! Let Stubbex record it for you by first hitting a
-real endpoint. Then add the `.eex` file extension to the stub JSON file
-and insert whatever template markup you need.
+You may be thinking, how to get a stub in the first place, to start
+editing? Simple! Let Stubbex record it for you by first hitting a real
+endpoint. Then add the `.eex` file extension to the stub JSON file and
+insert whatever markup you need.
+
+### Troubleshooting
+
+Be careful with putting markup in stubs. The templated stub is passed
+through an interpolation engine (EEx), then decoded from a JSON-encoded
+string into an Elixir-native data structure. If for example you miss
+escaping the template stub's body JSON properly (see above for escaping
+examples), you'll get runtime errors from Stubbex that look like this:
+
+```
+[error] GenServer "/stubs/https/jsonplaceholder.typicode.com/todos/1" terminating
+** (Poison.SyntaxError) Unexpected token at position 1008: h
+...
+```
+
+(`Poison` is the JSON decoder module).
+
+In this case I forgot to escape the double-quotes around the body JSON
+attributes, and Stubbex misinterpreted the result.
 
 ## Limitations
 
