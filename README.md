@@ -78,8 +78,8 @@ directory structure and a stub file there. Take a look:
     {"response":{"status_code":200,"headers"...
 
 The stub is stored in a predictable location
-(`stubs/protocol/host/path.../hash.json`). You can use your favourite
-JSON pretty-printing tool to view it.
+(`stubs/protocol/host/path.../hash.json`) and is pretty-printed for your
+viewing pleasure!
 
 ## The Hash
 
@@ -139,6 +139,44 @@ requests). If you want to set up stubs beforehand, you can:
 * Hit Stubbex from your app (this is best)
 * Use a tool like `curl` which sends requests exactly as you specify
 * Write the stub files by hand (way less fun).
+
+## Templating the Response
+
+You can template response stub files and Stubbex will immediately pick up
+changes to the stubs and start serving on-the-fly evaluated responses.
+Templates are named like `hash.json.eex` (they are [Embedded
+Elixir](https://hexdocs.pm/eex/EEx.html#module-tags) files) and can, for
+now, contain valid Elixir language expressions (coming soon: bindings to
+request parameters). If you have a template like
+`stubs/https/jsonplaceholder.typicode.com/todos/1/E406D55E4DBB26C8050FCDC3D20B7CAA.json.eex`,
+you can edit it with your favourite text editor and insert valid
+expressions according to the rules of EEx. For example, the above stub by
+default has a body like this:
+
+```
+"body": "{\n  \"userId\": 1,\n  \"id\": 1,\n  \"title\": \"delectus aut autem\",\n  \"completed\": false\n}"
+```
+
+You can set it to be automatically completed if we're past 2017:
+
+```
+"body": "{\n  \"userId\": 1,\n  \"id\": 1,\n  \"title\": \"delectus aut autem\",\n  \"completed\": <%= DateTime.utc_now().year > 2017 %>\n}"
+```
+
+Then if you get the response again (with the `curl` command in
+[Example]), you'll see that the `completed` attribute is set to `true`
+(assuming your year is past 2017).
+
+There are many other useful data manipulation functions in the [Elixir
+standard library](https://hexdocs.pm/elixir/api-reference.html#content),
+which can all be used as part of the EEx templates. This is of course in
+addition to all the normal language features you'd expect from a
+language, like arithmetic, looping and branching logic, etc.
+
+You may be thinking, how should you get a stub in the first place, to
+start editing? Simple! Let Stubbex record it for you by first hitting a
+real endpoint. Then add the `.eex` file extension to the stub JSON file
+and insert whatever template markup you need.
 
 ## Limitations
 

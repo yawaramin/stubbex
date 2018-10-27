@@ -30,6 +30,7 @@ defmodule Stubbex.Endpoint do
         _from,
         {request_path, mappings}
       ) do
+    alias Stubbex.Response
     headers = real_host(headers, request_path)
 
     md5_input = %{
@@ -39,42 +40,50 @@ defmodule Stubbex.Endpoint do
       body: body
     }
 
-    if Map.has_key?(mappings, md5_input) do
-      {
-        :reply,
-        Map.get(mappings, md5_input),
-        {request_path, mappings},
-        @timeout_ms
-      }
-    else
-      alias Stubbex.Response
+    md5 = md5_input |> Poison.encode!() |> :erlang.md5() |> Base.encode16()
 
-      file_path =
-        (
-          md5 = md5_input |> Poison.encode!() |> :erlang.md5() |> Base.encode16()
+    file_path =
+      [".", request_path, md5 <> ".json"]
+      |> Path.join()
+      |> String.replace("//", "/")
 
-          [".", request_path, md5 <> ".json"]
-          |> Path.join()
-          |> String.replace("//", "/")
-        )
+    file_path_eex = file_path <> ".eex"
 
-      if File.exists?(file_path) do
+    cond do
+      File.exists?(file_path_eex) ->
+        %{"response" => response} =
+          file_path_eex
+          |> EEx.eval_file()
+          |> Poison.decode!()
+
+        response =
+          response
+          |> Response.correct_content_length()
+          |> Response.decode()
+
+        {:reply, response, {request_path, mappings}, @timeout_ms}
+
+      Map.has_key?(mappings, md5_input) ->
+        {
+          :reply,
+          Map.get(mappings, md5_input),
+          {request_path, mappings},
+          @timeout_ms
+        }
+
+      File.exists?(file_path) ->
         %{"response" => response} = file_path |> File.read!() |> Poison.decode!()
         response = Response.decode(response)
 
-        {
-          :reply,
-          response,
-          {request_path, Map.put(mappings, md5_input, response)},
-          @timeout_ms
-        }
-      else
+        reply_update(response, request_path, mappings, md5_input)
+
+      true ->
         response = real_request(method, request_path <> "?" <> query_string, headers, body)
 
         with {:ok, file_body} <-
                md5_input
                |> Map.put(:response, Response.encode(response))
-               |> Poison.encode_to_iodata(),
+               |> Poison.encode_to_iodata(pretty: true),
              :ok <- "." |> Path.join(request_path) |> File.mkdir_p(),
              :ok <- File.write(file_path, file_body) do
           nil
@@ -88,19 +97,22 @@ defmodule Stubbex.Endpoint do
             ])
         end
 
-        {
-          :reply,
-          response,
-          {request_path, Map.put(mappings, md5_input, response)},
-          @timeout_ms
-        }
-      end
+        reply_update(response, request_path, mappings, md5_input)
     end
   end
 
   @doc "Go out with an explanation."
   def handle_info(:timeout, _state) do
     {:stop, :timeout, "This stub is now dormant due to inactivity."}
+  end
+
+  defp reply_update(response, request_path, mappings, md5_input) do
+    {
+      :reply,
+      response,
+      {request_path, Map.put(mappings, md5_input, response)},
+      @timeout_ms
+    }
   end
 
   defp real_request(method, request_path, headers, body) do
