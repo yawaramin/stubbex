@@ -51,9 +51,12 @@ Stubbex:
 
 ```
 ~/src/stubbex $ mix deps.get # First time only
-              $ export stubbex_cert_pem=/path/to/cert.pem # If it's not in /etc/ssl. (May be) needed for HTTPS requests
-              $ export stubbex_timeout_ms=10000 # Optional, default is 10 minutes
-              $ mix phx.server # Run the stub server
+              $ # Optional config with defaults, see config/config.exs for details:
+              $ export stubbex_cert_pem=/etc/ssl/cert.pem
+              $ export stubbex_stubs_dir=.
+              $ export stubbex_timeout_ms=600000
+              $ # Run the stub server:
+              $ mix phx.server
 ```
 
 Then, send it a request:
@@ -233,7 +236,6 @@ attributes, and Stubbex misinterpreted the result.
 * No tests right now
 * No documentation right now (other than the above)
 * No benchmarks right now
-* Can't configure where to save the stubs right now
 
 That said, for testing run-of-the-mill REST APIs with JSON responses,
 Stubbex is very helpful, even just running on your dev machine.

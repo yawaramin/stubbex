@@ -6,9 +6,11 @@
 use Mix.Config
 
 config :stubbex,
-  # Apparently HTTPoison and hackney don't ship with root SSL
-  # certificates, so we need to reach out to the system's root cert.
+  # We need to read the system's SSL root cert, because the Erlang/Elixir
+  # HTTP stack may not ship with paths to certain signing certs.
   cert_pem: System.get_env("stubbex_cert_pem") || "/etc/ssl/cert.pem",
+  # Where should Stubbex put its `stubs/...` directory hierarchy?
+  stubs_dir: System.get_env("stubbex_stubs_dir") || ".",
   # How long should Stubbex wait for requests and responses?
   timeout_ms: String.to_integer(System.get_env("stubbex_timeout_ms") || "600000")
 

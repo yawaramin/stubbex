@@ -36,14 +36,22 @@ defmodule Stubbex.Endpoint do
     md5_input = %{
       method: method,
       query_string: query_string,
-      headers: Enum.into(headers, %{}),
+      headers: Map.new(headers),
       body: body
     }
 
-    md5 = md5_input |> Poison.encode!() |> :erlang.md5() |> Base.encode16()
+    md5 =
+      md5_input
+      |> Poison.encode_to_iodata!()
+      |> :erlang.md5()
+      |> Base.encode16()
 
     file_path =
-      [".", request_path, md5 <> ".json"]
+      [
+        Application.get_env(:stubbex, :stubs_dir),
+        request_path,
+        md5 <> ".json"
+      ]
       |> Path.join()
       |> String.replace("//", "/")
 
@@ -55,7 +63,7 @@ defmodule Stubbex.Endpoint do
 
         %{"response" => response} =
           file_path_eex
-          |> EEx.eval_file([{:url, url} | Map.to_list(md5_input)])
+          |> EEx.eval_file(md5_input |> Map.to_list() |> Keyword.put(:url, url))
           |> Poison.decode!()
 
         response =

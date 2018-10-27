@@ -9,7 +9,7 @@ defmodule Stubbex.Response do
   def encode(%{headers: headers, body: body} = response) do
     %{
       response
-      | headers: Enum.into(headers, %{}),
+      | headers: Map.new(headers),
         body:
           if @content_gzip in headers do
             Base.encode64(body)
