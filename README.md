@@ -251,7 +251,13 @@ endpoint we use above, you can send the following request:
 
 ```
 ~/src/stubbex $ curl localhost:4000/validations/https/jsonplaceholder.typicode.com/todos/1
-[eq: "%{body: \"{\\n  \\\"userId\\\": 1,\\n  \\\"id\\\": ", del: "\\\"", eq: "1", del: "\\\"", eq: ",\\n  \\\"title\\\": \\\"", del: "Us", ins: "d", eq: "e", del: "r", ins: "lectus", eq: " a", del: "gen", ins: "u", eq: "t", del: ":", eq: " ", del: "c", ins: "a", eq: "u", del: "rl/7.54.0", ins: "tem", eq: "\\\",\\n  \\\"completed\\\": false\\n}\", headers: [{\"", ins: "d", eq: "a", del: "ccess-con", eq: "t", del: "rol-allow-cr", eq: "e", del: "dentials", eq: "\", \"", del: "tr", ins: "S", eq: "u", del: "e", ins: "n, 28 Oct 2018 23:21:42 GMT", eq: "\"}, {\"c", del: "ache-c", eq: "ont", del: "rol", ins: "ent-type", eq: "\", \"", ins: "a", eq: "p", del: "ub", ins: "p", eq: "lic", del: ",", ins: "ation/json;", eq: " ", del: "m", ...]
+[
+  eq: "%{\n  body: \"{\\n  \\\"userId\\\": 1,\\n  \\\"id\\\": ",
+  del: "\\\"",
+  eq: "1",
+  del: "\\\"",
+  eq: ",\\n  \\\"title\\\": \\\"",
+  ...
 ```
 
 To validate _all_ the JSON Placeholder todos, you can send:

@@ -14,6 +14,7 @@ defmodule Stubbex.Endpoint do
 
   @timeout_ms Application.get_env(:stubbex, :timeout_ms)
   @stubs_dir Application.get_env(:stubbex, :stubs_dir)
+  @pretty_true [{:pretty, true}]
 
   # Client
 
@@ -107,7 +108,7 @@ defmodule Stubbex.Endpoint do
         with {:ok, file_body} <-
                md5_input
                |> Map.put(:response, Response.encode(response))
-               |> Poison.encode_to_iodata(pretty: true),
+               |> Poison.encode_to_iodata(@pretty_true),
              :ok <- "." |> Path.join(stub_path) |> File.mkdir_p(),
              :ok <- File.write(file_path, file_body) do
           nil
@@ -173,9 +174,9 @@ defmodule Stubbex.Endpoint do
 
         response
         |> Response.decode()
-        |> inspect
-        |> String.myers_difference(inspect(real_response))
-        |> inspect
+        |> inspect(@pretty_true)
+        |> String.myers_difference(inspect(real_response, @pretty_true))
+        |> inspect(@pretty_true)
       end)
 
     {:reply, validations, state, @timeout_ms}
