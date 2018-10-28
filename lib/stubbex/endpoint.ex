@@ -1,6 +1,8 @@
 defmodule Stubbex.Endpoint do
   use GenServer
   require Logger
+  alias Stubbex.Response
+  alias Stubbex.Stub
 
   @typep mappings :: %{required(md5_input) => Response.t()}
   @typep md5_input :: %{
@@ -11,19 +13,28 @@ defmodule Stubbex.Endpoint do
          }
 
   @timeout_ms Application.get_env(:stubbex, :timeout_ms)
+  @stubs_dir Application.get_env(:stubbex, :stubs_dir)
 
   # Client
 
   @spec start_link([], String.t()) :: {:error, any()} | {:ok, pid()}
-  def start_link([], request_path) do
-    GenServer.start_link(__MODULE__, request_path, name: {:global, request_path})
+  def start_link([], stub_path) do
+    GenServer.start_link(__MODULE__, stub_path, name: {:global, stub_path})
   end
 
-  @spec request(String.t(), String.t(), String.t(), Response.headers(), binary) :: Response.t()
-  def request(method, request_path, query_string \\ "", headers \\ [], body \\ "") do
+  @spec stub(String.t(), String.t(), String.t(), Response.headers(), binary) :: Response.t()
+  def stub(method, stub_path, query_string \\ "", headers \\ [], body \\ "") do
     GenServer.call(
-      {:global, request_path},
-      {:request, method, query_string, headers, body},
+      {:global, stub_path},
+      {:stub, method, query_string, headers, body},
+      @timeout_ms
+    )
+  end
+
+  def validations(stub_path) do
+    GenServer.call(
+      {:global, stub_path},
+      {:validations, Path.join([@stubs_dir, stub_path, "**", "*.{json,json.eex}"])},
       @timeout_ms
     )
   end
@@ -32,19 +43,18 @@ defmodule Stubbex.Endpoint do
 
   @spec init(String.t()) :: {:ok, {String.t(), mappings}}
   @impl true
-  def init(request_path) do
+  def init(stub_path) do
     Process.flag(:trap_exit, true)
-    {:ok, {request_path, %{}}}
+    {:ok, {stub_path, %{}}}
   end
 
   @impl true
   def handle_call(
-        {:request, method, query_string, headers, body},
+        {:stub, method, query_string, headers, body},
         _from,
-        {request_path, mappings}
+        {stub_path, mappings}
       ) do
-    alias Stubbex.Response
-    headers = real_host(headers, request_path)
+    headers = real_host(headers, stub_path)
 
     md5_input = %{
       method: method,
@@ -61,8 +71,8 @@ defmodule Stubbex.Endpoint do
 
     file_path =
       [
-        Application.get_env(:stubbex, :stubs_dir),
-        request_path,
+        @stubs_dir,
+        stub_path,
         md5 <> ".json"
       ]
       |> Path.join()
@@ -72,42 +82,33 @@ defmodule Stubbex.Endpoint do
 
     cond do
       File.exists?(file_path_eex) ->
-        url = path_to_url(request_path)
+        url = path_to_url(stub_path)
 
         %{"response" => response} =
-          file_path_eex
-          |> EEx.eval_file(md5_input |> Map.to_list() |> Keyword.put(:url, url))
-          |> Poison.decode!()
+          Stub.get_stub_eex(file_path_eex, Map.put(md5_input, :url, url))
 
-        response =
-          response
-          |> Response.correct_content_length()
-          |> Response.decode()
-
-        {:reply, response, {request_path, mappings}, @timeout_ms}
+        {:reply, Response.decode_eex(response), {stub_path, mappings}, @timeout_ms}
 
       Map.has_key?(mappings, md5_input) ->
         {
           :reply,
           Map.get(mappings, md5_input),
-          {request_path, mappings},
+          {stub_path, mappings},
           @timeout_ms
         }
 
       File.exists?(file_path) ->
-        %{"response" => response} = file_path |> File.read!() |> Poison.decode!()
-        response = Response.decode(response)
-
-        reply_update(response, request_path, mappings, md5_input)
+        %{"response" => response} = Stub.get_stub(file_path)
+        reply_update(Response.decode(response), stub_path, mappings, md5_input)
 
       true ->
-        response = real_request(method, request_path, query_string, headers, body)
+        response = real_request(method, stub_path, query_string, headers, body)
 
         with {:ok, file_body} <-
                md5_input
                |> Map.put(:response, Response.encode(response))
                |> Poison.encode_to_iodata(pretty: true),
-             :ok <- "." |> Path.join(request_path) |> File.mkdir_p(),
+             :ok <- "." |> Path.join(stub_path) |> File.mkdir_p(),
              :ok <- File.write(file_path, file_body) do
           nil
         else
@@ -120,8 +121,64 @@ defmodule Stubbex.Endpoint do
             ])
         end
 
-        reply_update(response, request_path, mappings, md5_input)
+        reply_update(response, stub_path, mappings, md5_input)
     end
+  end
+
+  @impl true
+  def handle_call({:validations, path_glob}, _from, {stub_path, _mappings} = state) do
+    validations =
+      path_glob
+      |> Path.wildcard()
+      |> Enum.map(fn stub_file ->
+        %{
+          "query_string" => query_string,
+          "method" => method,
+          "headers" => headers,
+          "body" => body
+        } =
+          stub =
+          if String.ends_with?(stub_file, "eex") do
+            Stub.get_stub_eex(stub_file, %{
+              url: "",
+              query_string: "",
+              method: "",
+              headers: %{},
+              body: ""
+            })
+          else
+            Stub.get_stub(stub_file)
+          end
+
+        %{
+          "response" => response,
+          "query_string" => query_string,
+          "method" => method,
+          "headers" => headers,
+          "body" => body
+        } =
+          if String.ends_with?(stub_file, "eex") do
+            Stub.get_stub_eex(stub_file, %{
+              url: path_to_url(stub_path),
+              query_string: query_string,
+              method: method,
+              headers: headers,
+              body: body
+            })
+          else
+            stub
+          end
+
+        real_response = real_request(method, stub_path, query_string, headers, body)
+
+        response
+        |> Response.decode()
+        |> inspect
+        |> String.myers_difference(inspect(real_response))
+        |> inspect
+      end)
+
+    {:reply, validations, state, @timeout_ms}
   end
 
   @doc "Go out with an explanation."
@@ -130,16 +187,16 @@ defmodule Stubbex.Endpoint do
     {:stop, :timeout, "This stub is now dormant due to inactivity."}
   end
 
-  defp reply_update(response, request_path, mappings, md5_input) do
+  defp reply_update(response, stub_path, mappings, md5_input) do
     {
       :reply,
       response,
-      {request_path, Map.put(mappings, md5_input, response)},
+      {stub_path, Map.put(mappings, md5_input, response)},
       @timeout_ms
     }
   end
 
-  defp real_request(method, request_path, query_string, headers, body) do
+  defp real_request(method, stub_path, query_string, headers, body) do
     Logger.debug(["Headers: ", inspect(headers)])
 
     %HTTPoison.Response{
@@ -149,7 +206,7 @@ defmodule Stubbex.Endpoint do
     } =
       HTTPoison.request!(
         method,
-        url_query(request_path, query_string),
+        url_query(stub_path, query_string),
         body,
         headers,
         recv_timeout: @timeout_ms,
@@ -176,10 +233,10 @@ defmodule Stubbex.Endpoint do
     %{body: body, headers: headers, status_code: status_code}
   end
 
-  defp url_query(request_path, ""), do: path_to_url(request_path)
+  defp url_query(stub_path, ""), do: path_to_url(stub_path)
 
-  defp url_query(request_path, query_string) do
-    path_to_url(request_path) <> "?" <> query_string
+  defp url_query(stub_path, query_string) do
+    path_to_url(stub_path) <> "?" <> query_string
   end
 
   defp path_to_url("/stubs/" <> path) do
@@ -189,8 +246,8 @@ defmodule Stubbex.Endpoint do
   # Stubbex needs to call real requests with the "Host" header set
   # correctly, because clients calling it set Stubbex as the "Host", e.g.
   # `localhost:4000`.
-  defp real_host(headers, request_path) do
-    %URI{host: host} = request_path |> path_to_url |> URI.parse()
+  defp real_host(headers, stub_path) do
+    %URI{host: host} = stub_path |> path_to_url |> URI.parse()
 
     Enum.map(headers, fn
       {"host", _host} -> {"host", host}

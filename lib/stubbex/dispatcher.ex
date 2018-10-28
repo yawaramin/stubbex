@@ -7,10 +7,15 @@ defmodule Stubbex.Dispatcher do
     DynamicSupervisor.start_link(__MODULE__, [], name: __MODULE__)
   end
 
-  @spec dispatch(String.t(), String.t(), String.t(), Response.headers(), binary) :: Response.t()
-  def dispatch(method, request_path, query_string, headers, body) do
-    start_endpoint(request_path)
-    Endpoint.request(method, request_path, query_string, headers, body)
+  @spec stub(String.t(), String.t(), String.t(), Response.headers(), binary) :: Response.t()
+  def stub(method, stub_path, query_string, headers, body) do
+    start_endpoint(stub_path)
+    Endpoint.stub(method, stub_path, query_string, headers, body)
+  end
+
+  def validations(stub_path) do
+    start_endpoint(stub_path)
+    Endpoint.validations(stub_path)
   end
 
   defp start_endpoint(request_path) do
@@ -23,9 +28,6 @@ defmodule Stubbex.Dispatcher do
 
   @impl true
   def init(args) do
-    DynamicSupervisor.init(
-      strategy: :one_for_one,
-      extra_arguments: [args]
-    )
+    DynamicSupervisor.init(strategy: :one_for_one, extra_arguments: [args])
   end
 end

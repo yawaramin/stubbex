@@ -231,6 +231,52 @@ examples), you'll get runtime errors from Stubbex that look like this:
 In this case I forgot to escape the double-quotes around the body JSON
 attributes, and Stubbex misinterpreted the result.
 
+## Validating the Stubs
+
+The trouble with static stubs is that they will get out of date. To
+guard against this happening, one option is to make 'someone'
+responsible for keeping the stub files up-to-date. Under [contract
+testing](https://martinfowler.com/bliki/ContractTest.html), you might
+actually also delegate some of the responsibility for stub upkeep for
+each service's stubs to the corresponding service provider (obviously,
+this only works if you can reach an agreement with the service
+provider).
+
+At the bare minimum, you would zip up each provider's stubs periodically
+and 'throw it over the wall' and let them figure out if they're still
+conforming to the request-response expectations. But this can be a tough
+sell, so Stubbex provides a convenience to _validate_ stubs. For
+example, to validate the stubs for the 'JSON Placeholder Todo ID 1'
+endpoint we use above, you can send the following request:
+
+```
+~/src/stubbex $ curl localhost:4000/validations/https/jsonplaceholder.typicode.com/todos/1
+[eq: "%{body: \"{\\n  \\\"userId\\\": 1,\\n  \\\"id\\\": ", del: "\\\"", eq: "1", del: "\\\"", eq: ",\\n  \\\"title\\\": \\\"", del: "Us", ins: "d", eq: "e", del: "r", ins: "lectus", eq: " a", del: "gen", ins: "u", eq: "t", del: ":", eq: " ", del: "c", ins: "a", eq: "u", del: "rl/7.54.0", ins: "tem", eq: "\\\",\\n  \\\"completed\\\": false\\n}\", headers: [{\"", ins: "d", eq: "a", del: "ccess-con", eq: "t", del: "rol-allow-cr", eq: "e", del: "dentials", eq: "\", \"", del: "tr", ins: "S", eq: "u", del: "e", ins: "n, 28 Oct 2018 23:21:42 GMT", eq: "\"}, {\"c", del: "ache-c", eq: "ont", del: "rol", ins: "ent-type", eq: "\", \"", ins: "a", eq: "p", del: "ub", ins: "p", eq: "lic", del: ",", ins: "ation/json;", eq: " ", del: "m", ...]
+```
+
+To validate _all_ the JSON Placeholder todos, you can send:
+
+```
+~/src/stubbex $ curl localhost:4000/validations/https/jsonplaceholder.typicode.com/todos/
+...
+```
+
+To validate _all_ the JSON Placeholder _stubs,_ you can send:
+
+```
+~/src/stubbex $ curl localhost:4000/validations/https/jsonplaceholder.typicode.com/
+...
+```
+
+However, Stubbex doesn't support validating stubs at any higher level
+and will error if you try. I think this is a reasonable balance if
+you're trying to delegate validating stubs to service providers. They
+would just worry about their own stubs.
+
+*NOTE:* this feature is a 'rough draft' and is not very pleasant to use
+right now: it outputs raw Elixir edit lists of Myers differences between
+stub and real responses. Improvements coming!
+
 ## Limitations
 
 * No tests right now

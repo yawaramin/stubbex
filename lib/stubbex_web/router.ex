@@ -19,4 +19,8 @@ defmodule StubbexWeb.Router do
   scope "/stubs", StubbexWeb do
     match :*, "/*any", StubController, :stub
   end
+
+  scope "/validations", StubbexWeb do
+    get "/*any", StubController, :validations
+  end
 end

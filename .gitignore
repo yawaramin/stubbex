@@ -17,3 +17,5 @@ erl_crash.dump
 
 .elixir_ls
 stubs
+priv/static
+rel

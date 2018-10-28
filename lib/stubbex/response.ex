@@ -30,6 +30,8 @@ defmodule Stubbex.Response do
     }
   end
 
+  def decode_eex(response), do: response |> correct_content_length |> decode
+
   @doc """
   Updates the given response with its correct content length. Used when
   the response stub is in a template and we don't know what the final
