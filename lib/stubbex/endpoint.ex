@@ -2,14 +2,24 @@ defmodule Stubbex.Endpoint do
   use GenServer
   require Logger
 
+  @typep mappings :: %{required(md5_input) => Response.t()}
+  @typep md5_input :: %{
+           method: String.t(),
+           query_string: String.t(),
+           headers: Response.headers(),
+           body: binary
+         }
+
   @timeout_ms Application.get_env(:stubbex, :timeout_ms)
 
   # Client
 
+  @spec start_link([], String.t()) :: {:error, any()} | {:ok, pid()}
   def start_link([], request_path) do
     GenServer.start_link(__MODULE__, request_path, name: {:global, request_path})
   end
 
+  @spec request(String.t(), String.t(), String.t(), Response.headers(), binary) :: Response.t()
   def request(method, request_path, query_string \\ "", headers \\ [], body \\ "") do
     GenServer.call(
       {:global, request_path},
@@ -20,11 +30,14 @@ defmodule Stubbex.Endpoint do
 
   # Server
 
+  @spec init(String.t()) :: {:ok, {String.t(), mappings}}
+  @impl true
   def init(request_path) do
     Process.flag(:trap_exit, true)
     {:ok, {request_path, %{}}}
   end
 
+  @impl true
   def handle_call(
         {:request, method, query_string, headers, body},
         _from,
@@ -112,6 +125,7 @@ defmodule Stubbex.Endpoint do
   end
 
   @doc "Go out with an explanation."
+  @impl true
   def handle_info(:timeout, _state) do
     {:stop, :timeout, "This stub is now dormant due to inactivity."}
   end

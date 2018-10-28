@@ -4,8 +4,19 @@ defmodule Stubbex.Response do
   JSON-suitable storage format.
   """
 
+  @type t :: %{
+          body: binary,
+          headers: headers,
+          status_code: status_code()
+        }
+  @type headers :: [{String.t(), String.t()}]
+  @type headers_map :: %{required(String.t()) => String.t()}
+  @type status_code :: 100..599
+  @typep json_map :: %{required(String.t()) => String.t()}
+
   @content_gzip {"content-encoding", "gzip"}
 
+  @spec encode(t) :: %{body: binary, headers: headers_map, status_code: status_code}
   def encode(%{headers: headers, body: body} = response) do
     %{
       response
@@ -26,11 +37,13 @@ defmodule Stubbex.Response do
   correct, otherwise the HTTP client will stop reading the content body
   at the wrong time.
   """
+  @spec correct_content_length(json_map) :: json_map
   def correct_content_length(%{"headers" => headers, "body" => body} = response) do
     length = body |> String.length() |> Integer.to_string()
     %{response | "headers" => %{headers | "content-length" => length}}
   end
 
+  @spec decode(json_map) :: t
   def decode(%{"status_code" => status_code, "headers" => headers, "body" => body}) do
     %{
       status_code: status_code,

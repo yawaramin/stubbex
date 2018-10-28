@@ -2,10 +2,12 @@ defmodule Stubbex.Dispatcher do
   use DynamicSupervisor
   alias Stubbex.Endpoint
 
+  @spec start_link() :: :ignore | {:error, any()} | {:ok, pid()}
   def start_link() do
     DynamicSupervisor.start_link(__MODULE__, [], name: __MODULE__)
   end
 
+  @spec dispatch(String.t(), String.t(), String.t(), Response.headers(), binary) :: Response.t()
   def dispatch(method, request_path, query_string, headers, body) do
     start_endpoint(request_path)
     Endpoint.request(method, request_path, query_string, headers, body)

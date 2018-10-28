@@ -1,6 +1,7 @@
 defmodule StubbexWeb.StubController do
   use StubbexWeb, :controller
 
+  @spec stub(Plug.Conn.t(), any()) :: Plug.Conn.t()
   def stub(conn, _params) do
     alias Stubbex.Dispatcher
 
