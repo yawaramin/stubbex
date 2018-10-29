@@ -123,7 +123,7 @@ defmodule Stubbex.Endpoint do
   end
 
   @impl true
-  def handle_call({:validations, conn, path_glob}, _from, {stub_path, _mappings} = state) do
+  def handle_call({:validations, conn, path_glob}, _from, state) do
     conn =
       path_glob
       |> Path.wildcard()
@@ -149,6 +149,9 @@ defmodule Stubbex.Endpoint do
             Stub.get_stub(contents)
           end
 
+        url_path = Path.dirname(stub_file)
+        url = path_to_url(url_path)
+
         %{
           "response" => response,
           "query_string" => query_string,
@@ -158,7 +161,7 @@ defmodule Stubbex.Endpoint do
         } =
           if String.ends_with?(stub_file, "eex") do
             Stub.get_stub(contents, %{
-              url: path_to_url(stub_path),
+              url: url,
               query_string: query_string,
               method: method,
               headers: headers,
@@ -168,22 +171,38 @@ defmodule Stubbex.Endpoint do
             stub
           end
 
-        real_response = real_request(method, stub_path, query_string, headers, body)
+        real_response =
+          method
+          |> real_request(url_path, query_string, headers, body)
+          |> Response.encode()
+          |> Poison.encode!(@pretty_opts)
 
         validation =
           response
-          |> Response.decode()
-          |> inspect(@pretty_opts)
-          |> String.myers_difference(inspect(real_response, @pretty_opts))
-          |> inspect(@pretty_opts)
+          |> Poison.encode!(@pretty_opts)
+          |> String.myers_difference(real_response)
+          |> diff_color
 
-        case Plug.Conn.chunk(conn, validation) do
-          {:ok, conn} -> {:cont, conn}
+        with {:ok, conn} <-
+               Plug.Conn.chunk(conn, "\n" <> url_query(url_path, query_string) <> "\n"),
+             {:ok, conn} <- Plug.Conn.chunk(conn, validation) do
+          {:cont, conn}
+        else
           {:error, :closed} -> {:halt, conn}
         end
       end)
 
     {:reply, conn, state, @timeout_ms}
+  end
+
+  defp diff_color(myers) do
+    myers
+    |> Enum.flat_map(fn
+      {:eq, text} -> [:normal, text]
+      {:del, text} -> [:red, text]
+      {:ins, text} -> [:green, text]
+    end)
+    |> IO.ANSI.format()
   end
 
   @doc "Go out with an explanation."
@@ -246,6 +265,10 @@ defmodule Stubbex.Endpoint do
 
   defp path_to_url("/stubs/" <> path) do
     String.replace(path, "/", "://", global: false)
+  end
+
+  defp path_to_url("stubs/" <> _path = path) do
+    path_to_url("/" <> path)
   end
 
   # Stubbex needs to call real requests with the "Host" header set

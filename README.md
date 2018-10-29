@@ -1,10 +1,10 @@
-# Stubbex–stub and template with ease
+# Stubbex–stub and validate with ease
 
 This is a stub server, like Mountebank or Wiremock. Its purpose is to
-automatically record, save, and reply with responses from real endpoints
-whenever you try to hit the stub endpoint, optionally with interpolation
-from template stubs that you control. Essentially, it's a cache at the
-granularity of every endpoint for any host.
+automatically save responses from real endpoints and use those going
+forward whenever you try to hit the stub endpoint. It can also
+interpolate responses from template stubs that you control, and validate
+saved stubs against the real responses.
 
 What sets Stubbex apart (in my opinion) are three things:
 
@@ -251,16 +251,14 @@ endpoint we use above, you can send the following request:
 
 ```
 ~/src/stubbex $ curl localhost:4000/validations/https/jsonplaceholder.typicode.com/todos/1
-[
-  eq: "%{\n  body: \"{\\n  \\\"userId\\\": 1,\\n  \\\"id\\\": ",
-  del: "\\\"",
-  eq: "1",
-  del: "\\\"",
-  eq: ",\\n  \\\"title\\\": \\\"",
-  ...
 ```
 
-To validate _all_ the JSON Placeholder todos, you can send:
+And Stubbex replies with a colorized diff suitable for display in a
+terminal:
+
+<img width="1376" alt="Output of ~/src/stubbex $ curl localhost:4000/validations/https/jsonplaceholder.typicode.com/todos/1" src="https://user-images.githubusercontent.com/6997/47628883-4c3ea880-db0e-11e8-8562-e705ff100cb5.png">
+
+To validate _all_ the JSON Placeholder _todos,_ you can send:
 
 ```
 ~/src/stubbex $ curl localhost:4000/validations/https/jsonplaceholder.typicode.com/todos/
@@ -278,10 +276,6 @@ However, Stubbex doesn't support validating stubs at any higher level
 and will error if you try. I think this is a reasonable balance if
 you're trying to delegate validating stubs to service providers. They
 would just worry about their own stubs.
-
-*NOTE:* this feature is a 'rough draft' and is not very pleasant to use
-right now: it outputs raw Elixir edit lists of Myers differences between
-stub and real responses. Improvements coming!
 
 ## Limitations
 
