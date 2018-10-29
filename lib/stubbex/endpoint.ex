@@ -177,17 +177,23 @@ defmodule Stubbex.Endpoint do
           |> Response.encode()
           |> Poison.encode!(@pretty_opts)
 
+        header = [
+          :inverse,
+          " ",
+          url_query(url_path, query_string),
+          " ",
+          :reset,
+          "\n"
+        ]
+
         validation =
           response
           |> Poison.encode!(@pretty_opts)
           |> String.myers_difference(real_response)
           |> diff_color
 
-        with {:ok, conn} <-
-               Plug.Conn.chunk(conn, "\n" <> url_query(url_path, query_string) <> "\n"),
-             {:ok, conn} <- Plug.Conn.chunk(conn, validation) do
-          {:cont, conn}
-        else
+        case Plug.Conn.chunk(conn, IO.ANSI.format([header | validation])) do
+          {:ok, conn} -> {:cont, conn}
           {:error, :closed} -> {:halt, conn}
         end
       end)
@@ -198,11 +204,10 @@ defmodule Stubbex.Endpoint do
   defp diff_color(myers) do
     myers
     |> Enum.flat_map(fn
-      {:eq, text} -> [:normal, text]
+      {:eq, text} -> [:reset, text]
       {:del, text} -> [:red, text]
       {:ins, text} -> [:green, text]
     end)
-    |> IO.ANSI.format()
   end
 
   @doc "Go out with an explanation."

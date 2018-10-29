@@ -6,8 +6,8 @@ forward whenever you try to hit the stub endpoint. It can also
 interpolate responses from template stubs that you control, and validate
 saved stubs against the real responses.
 
-In other words, Stubbex sets up what Martin Fowler calls a [self-
-initializing fake](https://martinfowler.com/bliki/SelfInitializingFake.html).
+In other words, Stubbex sets up what Martin Fowler calls a
+[self-initializing fake](https://martinfowler.com/bliki/SelfInitializingFake.html).
 
 What sets Stubbex apart (in my opinion) are three things:
 
@@ -260,20 +260,18 @@ endpoint we use above, you can send the following request:
 And Stubbex replies with a colorized diff suitable for display in a
 terminal:
 
-<img width="1376" alt="Output of ~/src/stubbex $ curl localhost:4000/validations/https/jsonplaceholder.typicode.com/todos/1" src="https://user-images.githubusercontent.com/6997/47628883-4c3ea880-db0e-11e8-8562-e705ff100cb5.png">
+<img width="1364" alt="Stubbex validation output" src="https://user-images.githubusercontent.com/6997/47684295-c28fe900-dba8-11e8-8f7f-3699d18a0111.png">
 
 To validate _all_ the JSON Placeholder _todos,_ you can send:
 
 ```
 ~/src/stubbex $ curl localhost:4000/validations/https/jsonplaceholder.typicode.com/todos/
-...
 ```
 
 To validate _all_ the JSON Placeholder _stubs,_ you can send:
 
 ```
 ~/src/stubbex $ curl localhost:4000/validations/https/jsonplaceholder.typicode.com/
-...
 ```
 
 However, Stubbex doesn't support validating stubs at any higher level
