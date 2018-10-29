@@ -82,7 +82,7 @@ defmodule Stubbex.Endpoint do
         url = path_to_url(stub_path)
 
         %{"response" => response} =
-          Stub.get_stub_eex(file_path_eex, Map.put(md5_input, :url, url))
+          Stub.get_stub(File.read!(file_path_eex), Map.put(md5_input, :url, url))
 
         {:reply, Response.decode_eex(response), {stub_path, mappings}, @timeout_ms}
 
@@ -95,7 +95,7 @@ defmodule Stubbex.Endpoint do
         }
 
       File.exists?(file_path) ->
-        %{"response" => response} = Stub.get_stub(file_path)
+        %{"response" => response} = Stub.get_stub(File.read!(file_path))
         reply_update(Response.decode(response), stub_path, mappings, md5_input)
 
       true ->
@@ -128,6 +128,8 @@ defmodule Stubbex.Endpoint do
       path_glob
       |> Path.wildcard()
       |> Enum.reduce_while(conn, fn stub_file, conn ->
+        contents = File.read!(stub_file)
+
         %{
           "query_string" => query_string,
           "method" => method,
@@ -136,7 +138,7 @@ defmodule Stubbex.Endpoint do
         } =
           stub =
           if String.ends_with?(stub_file, "eex") do
-            Stub.get_stub_eex(stub_file, %{
+            Stub.get_stub(contents, %{
               url: "",
               query_string: "",
               method: "",
@@ -144,7 +146,7 @@ defmodule Stubbex.Endpoint do
               body: ""
             })
           else
-            Stub.get_stub(stub_file)
+            Stub.get_stub(contents)
           end
 
         %{
@@ -155,7 +157,7 @@ defmodule Stubbex.Endpoint do
           "body" => body
         } =
           if String.ends_with?(stub_file, "eex") do
-            Stub.get_stub_eex(stub_file, %{
+            Stub.get_stub(contents, %{
               url: path_to_url(stub_path),
               query_string: query_string,
               method: method,
