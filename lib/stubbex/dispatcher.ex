@@ -13,9 +13,11 @@ defmodule Stubbex.Dispatcher do
     Endpoint.stub(method, stub_path, query_string, headers, body)
   end
 
-  def validations(stub_path) do
-    start_endpoint(stub_path)
-    Endpoint.validations(stub_path)
+  def validations(conn) do
+    path = stub_path(conn.request_path)
+
+    start_endpoint(path)
+    Endpoint.validations(conn, path)
   end
 
   defp start_endpoint(request_path) do
@@ -25,6 +27,8 @@ defmodule Stubbex.Dispatcher do
       restart: :temporary
     })
   end
+
+  defp stub_path("/validations" <> path), do: "/stubs" <> path
 
   @impl true
   def init(args) do

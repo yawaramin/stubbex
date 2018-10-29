@@ -14,7 +14,7 @@ defmodule Stubbex.Endpoint do
 
   @timeout_ms Application.get_env(:stubbex, :timeout_ms)
   @stubs_dir Application.get_env(:stubbex, :stubs_dir)
-  @pretty_true [{:pretty, true}]
+  @pretty_opts [{:pretty, true}, {:limit, 100_000}]
 
   # Client
 
@@ -32,10 +32,10 @@ defmodule Stubbex.Endpoint do
     )
   end
 
-  def validations(stub_path) do
+  def validations(conn, stub_path) do
     GenServer.call(
       {:global, stub_path},
-      {:validations, Path.join([@stubs_dir, stub_path, "**", "*.{json,json.eex}"])},
+      {:validations, conn, Path.join([@stubs_dir, stub_path, "**", "*.{json,json.eex}"])},
       @timeout_ms
     )
   end
@@ -71,11 +71,7 @@ defmodule Stubbex.Endpoint do
       |> Base.encode16()
 
     file_path =
-      [
-        @stubs_dir,
-        stub_path,
-        md5 <> ".json"
-      ]
+      [@stubs_dir, stub_path, md5 <> ".json"]
       |> Path.join()
       |> String.replace("//", "/")
 
@@ -108,7 +104,7 @@ defmodule Stubbex.Endpoint do
         with {:ok, file_body} <-
                md5_input
                |> Map.put(:response, Response.encode(response))
-               |> Poison.encode_to_iodata(@pretty_true),
+               |> Poison.encode_to_iodata(@pretty_opts),
              :ok <- "." |> Path.join(stub_path) |> File.mkdir_p(),
              :ok <- File.write(file_path, file_body) do
           nil
@@ -127,11 +123,11 @@ defmodule Stubbex.Endpoint do
   end
 
   @impl true
-  def handle_call({:validations, path_glob}, _from, {stub_path, _mappings} = state) do
-    validations =
+  def handle_call({:validations, conn, path_glob}, _from, {stub_path, _mappings} = state) do
+    conn =
       path_glob
       |> Path.wildcard()
-      |> Enum.map(fn stub_file ->
+      |> Enum.reduce_while(conn, fn stub_file, conn ->
         %{
           "query_string" => query_string,
           "method" => method,
@@ -172,14 +168,20 @@ defmodule Stubbex.Endpoint do
 
         real_response = real_request(method, stub_path, query_string, headers, body)
 
-        response
-        |> Response.decode()
-        |> inspect(@pretty_true)
-        |> String.myers_difference(inspect(real_response, @pretty_true))
-        |> inspect(@pretty_true)
+        validation =
+          response
+          |> Response.decode()
+          |> inspect(@pretty_opts)
+          |> String.myers_difference(inspect(real_response, @pretty_opts))
+          |> inspect(@pretty_opts)
+
+        case Plug.Conn.chunk(conn, validation) do
+          {:ok, conn} -> {:cont, conn}
+          {:error, :closed} -> {:halt, conn}
+        end
       end)
 
-    {:reply, validations, state, @timeout_ms}
+    {:reply, conn, state, @timeout_ms}
   end
 
   @doc "Go out with an explanation."

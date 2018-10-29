@@ -22,17 +22,6 @@ defmodule StubbexWeb.StubController do
 
   def validations(conn, _params) do
     conn = send_chunked(conn, 200)
-
-    conn.request_path
-    |> stub_path
-    |> Dispatcher.validations()
-    |> Enum.reduce_while(conn, fn validation, conn ->
-      case chunk(conn, validation) do
-        {:ok, conn} -> {:cont, conn}
-        {:error, :closed} -> {:halt, conn}
-      end
-    end)
+    Dispatcher.validations(conn)
   end
-
-  defp stub_path("/validations" <> path), do: "/stubs" <> path
 end
