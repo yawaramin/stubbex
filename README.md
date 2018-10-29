@@ -6,6 +6,9 @@ forward whenever you try to hit the stub endpoint. It can also
 interpolate responses from template stubs that you control, and validate
 saved stubs against the real responses.
 
+In other words, Stubbex sets up what Martin Fowler calls a [self-
+initializing fake](https://martinfowler.com/bliki/SelfInitializingFake.html).
+
 What sets Stubbex apart (in my opinion) are three things:
 
 ## Emphasis on Simplicity
@@ -17,10 +20,11 @@ framework, to tell it what to do.
 
 Stubbex requires no configuration and tries to 'do the right thing':
 call out to the real endpoints only if it needs to, and replay existing
-stubs whenever it can.
+stubs whenever it can. It can do validation of large subsets of stubs
+with a single command.
 
-If you want to set up stubs manually, you have to place the stub files in
-the format that Stubbex expects, at the right location, as explained
+If you want to set up stubs manually, you have to place the stub files
+in the format that Stubbex expects, at the right location, as explained
 below. However, you can also take advantage of Stubbex's initial
 recording ability to edit already-existing stub files in place.
 
