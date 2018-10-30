@@ -215,11 +215,8 @@ defmodule Stubbex.Endpoint do
     end)
   end
 
-  @doc "Go out with an explanation."
   @impl true
-  def handle_info(:timeout, _state) do
-    {:stop, :timeout, "This stub is now dormant due to inactivity."}
-  end
+  def handle_info(:timeout, _state), do: {:stop, :shutdown, nil}
 
   defp reply_update(response, stub_path, mappings, md5_input) do
     {
