@@ -129,28 +129,7 @@ defmodule Stubbex.Endpoint do
       |> Path.wildcard()
       |> Enum.reduce_while(conn, fn stub_file, conn ->
         contents = File.read!(stub_file)
-
-        %{
-          "query_string" => query_string,
-          "method" => method,
-          "headers" => headers,
-          "body" => body
-        } =
-          stub =
-          if String.ends_with?(stub_file, "eex") do
-            Stub.get_stub(contents, %{
-              url: "",
-              query_string: "",
-              method: "",
-              headers: %{},
-              body: ""
-            })
-          else
-            Stub.get_stub(contents)
-          end
-
         url_path = Path.dirname(stub_file)
-        url = path_to_url(url_path)
 
         %{
           "response" => response,
@@ -160,6 +139,22 @@ defmodule Stubbex.Endpoint do
           "body" => body
         } =
           if String.ends_with?(stub_file, "eex") do
+            %{
+              "query_string" => query_string,
+              "method" => method,
+              "headers" => headers,
+              "body" => body
+            } =
+              Stub.get_stub(contents, %{
+                url: "",
+                query_string: "",
+                method: "",
+                headers: %{},
+                body: ""
+              })
+
+            url = path_to_url(url_path)
+
             Stub.get_stub(contents, %{
               url: url,
               query_string: query_string,
@@ -168,7 +163,7 @@ defmodule Stubbex.Endpoint do
               body: body
             })
           else
-            stub
+            Stub.get_stub(contents)
           end
 
         real_response =
