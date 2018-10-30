@@ -95,7 +95,7 @@ defmodule Stubbex.Endpoint do
         }
 
       File.exists?(file_path) ->
-        %{"response" => response} = Stub.get_stub(File.read!(file_path))
+        %{"response" => response} = file_path |> File.read!() |> Stub.get_stub()
         reply_update(Response.decode(response), stub_path, mappings, md5_input)
 
       true ->

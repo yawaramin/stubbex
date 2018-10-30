@@ -32,13 +32,16 @@ defmodule Stubbex.Response do
 
   @spec decode(json_map) :: t
   def decode(%{"status_code" => status_code, "headers" => headers, "body" => body}) do
+    headers =
+      if body == "" do
+        headers
+      else
+        Map.put(headers, "content-length", body |> String.length() |> Integer.to_string())
+      end
+
     %{
       status_code: status_code,
-      headers:
-        Map.to_list(%{
-          headers
-          | "content-length" => body |> String.length() |> Integer.to_string()
-        }),
+      headers: Map.to_list(headers),
       body:
         if @content_gzip in headers do
           Base.decode64!(body)
