@@ -30,26 +30,15 @@ defmodule Stubbex.Response do
     }
   end
 
-  def decode_eex(response), do: response |> correct_content_length |> decode
-
-  @doc """
-  Updates the given response with its correct content length. Used when
-  the response stub is in a template and we don't know what the final
-  exact response length will be. The content length needs to be exactly
-  correct, otherwise the HTTP client will stop reading the content body
-  at the wrong time.
-  """
-  @spec correct_content_length(json_map) :: json_map
-  def correct_content_length(%{"headers" => headers, "body" => body} = response) do
-    length = body |> String.length() |> Integer.to_string()
-    %{response | "headers" => %{headers | "content-length" => length}}
-  end
-
   @spec decode(json_map) :: t
   def decode(%{"status_code" => status_code, "headers" => headers, "body" => body}) do
     %{
       status_code: status_code,
-      headers: Map.to_list(headers),
+      headers:
+        Map.to_list(%{
+          headers
+          | "content-length" => body |> String.length() |> Integer.to_string()
+        }),
       body:
         if @content_gzip in headers do
           Base.decode64!(body)

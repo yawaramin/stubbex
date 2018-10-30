@@ -84,7 +84,7 @@ defmodule Stubbex.Endpoint do
         %{"response" => response} =
           Stub.get_stub(File.read!(file_path_eex), Map.put(md5_input, :url, url))
 
-        {:reply, Response.decode_eex(response), {stub_path, mappings}, @timeout_ms}
+        {:reply, Response.decode(response), {stub_path, mappings}, @timeout_ms}
 
       Map.has_key?(mappings, md5_input) ->
         {
