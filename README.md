@@ -47,20 +47,27 @@ services that haven't been written yet.
 
 Stubbex is designed to be massively concurrent. It takes advantage of
 Elixir, Phoenix Framework, and the Erlang system to handle concurrent
-incoming requests efficiently. Note that, since this project is new, this
-has not been tested yet and there are no benchmarks. But _in theory,_ you
-should be able to start up a single Stubbex server and hit it from many
-different tests and CI builds. It will automatically fetch, save, and
-reply with responses.
+incoming requests efficiently. Note that, since this project is new,
+this has not been tested yet and there are no benchmarks. But _in
+theory,_ you should be able to start up a single Stubbex server and hit
+it from many different tests and CI builds. It will automatically fetch,
+save, and reply with responses.
+
+Related to concurrency, another huge benefit that Stubbex brings to the
+table (thanks to its implementation stack) is fault-tolerance. You can
+send it bad inputs in a few different ways–and I discuss some of them in
+the sections below–but what they all have in common is that, short of a
+truly unforeseen catastrophic failure, Stubbex will recover from every
+error and immediately be ready to handle the next request.
 
 ## Request Precision
 
 This means that Stubbex stores and responds to requests using _all
 pertinent_ information contained in the requests, like the method (GET,
 POST, etc.), URLs, query parameters, request headers if any, and request
-body if any. You can get it to save and give you a response with complete
-precision. So you can stub any number of different hosts, endpoints, and
-specific requests.
+body if any. You can get it to save and give you a response with
+complete precision. So you can stub any number of different hosts,
+endpoints, and specific requests.
 
 ## Example
 
@@ -128,8 +135,9 @@ Stubbex uses this hash to look up the correct response for any request,
 and if it doesn't have it, it will fetch it and save it for next time.
 
 This 'request-addressable' file name allows Stubbex to pick the correct
-response stub for any call without having to open and parse the stub file
-itself. It effectively uses the filesystem as an index data structure.
+response stub for any call without having to open and parse the stub
+file itself. It effectively uses the filesystem as an index data
+structure.
 
 You might be screaming at me, 'Why MD5?! Why not SHA-1/256/etc.?' The
 thing is, mapping a request to a simple file name for an internal-use
@@ -140,12 +148,12 @@ makes Stubbex potentially even more interoperable with other tools.
 ## Developer Workflow
 
 To use Stubbex as part of your dev workflow, first you'll need a running
-Stubbex instance. The easiest way to get it running is as shown above–but
-you will need to install [Elixir](https://elixir-lang.org/) on your dev
-machine. Alternatively, you might
-[deploy](https://hexdocs.pm/phoenix/deployment.html#content) Stubbex to a
-shared internal server (**WARNING:** by no means expose it to the outside
-world!) and use that for development and testing across multiple
+Stubbex instance. The easiest way to get it running is as shown
+above–but you will need to install [Elixir](https://elixir-lang.org/) on
+your dev machine. Alternatively, you might
+[deploy](https://hexdocs.pm/phoenix/deployment.html#content) Stubbex to
+a shared internal server (**WARNING:** by no means expose it to the
+outside world!) and use that for development and testing across multiple
 developer machines and CI builds.
 
 Next, set up a QA/test config in your app that points all the base URLs
@@ -233,10 +241,10 @@ Or you can use the user-agent header as part of the todo title:
 ```
 
 Then if you get the response again (with the `curl` command in
-[Example](#example)), you'll see that the `completed` attribute is set to
-`true` (assuming your year is past 2017); or that the todo title is
-`User agent: curl/7.54.0` (e.g.), or any other result, depending on which
-markup you put in place.
+[Example](#example)), you'll see that the `completed` attribute is set
+to `true` (assuming your year is past 2017); or that the todo title is
+`User agent: curl/7.54.0` (e.g.), or any other result, depending on
+which markup you put in place.
 
 Request parameters are available under the following names:
 
@@ -329,5 +337,3 @@ would just worry about their own stubs.
 * No documentation right now (other than the above)
 * No benchmarks right now
 
-That said, for testing run-of-the-mill REST APIs with JSON responses,
-Stubbex is very helpful, even just running on your dev machine.
