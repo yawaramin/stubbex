@@ -99,7 +99,20 @@ defmodule Stubbex.Endpoint do
         reply_update(Response.decode(response), stub_path, mappings, md5_input)
 
       true ->
-        response = real_request(method, stub_path, query_string, headers, body)
+        response =
+          method
+          |> real_request(stub_path, query_string, headers, body)
+          |> case do
+            {:ok, response} ->
+              response
+
+            {:error, %HTTPoison.Error{}} ->
+              %{
+                body: "",
+                headers: [],
+                status_code: 404
+              }
+          end
 
         with {:ok, file_body} <-
                md5_input
@@ -166,11 +179,8 @@ defmodule Stubbex.Endpoint do
             Stub.get_stub(contents)
           end
 
-        real_response =
-          method
-          |> real_request(url_path, query_string, headers, body)
-          |> Response.encode()
-          |> Poison.encode!(@pretty_opts)
+        {:ok, real_response} = real_request(method, url_path, query_string, headers, body)
+        real_response = real_response |> Response.encode() |> Poison.encode!(@pretty_opts)
 
         header = [
           :inverse,
@@ -223,38 +233,35 @@ defmodule Stubbex.Endpoint do
   defp real_request(method, stub_path, query_string, headers, body) do
     Logger.debug(["Headers: ", inspect(headers)])
 
-    %HTTPoison.Response{
-      body: body,
-      headers: headers,
-      status_code: status_code
-    } =
-      HTTPoison.request!(
-        method,
-        url_query(stub_path, query_string),
-        body,
-        headers,
-        recv_timeout: @timeout_ms,
-        # See https://github.com/edgurgel/httpoison/issues/294 for more
-        ssl: [cacertfile: Application.get_env(:stubbex, :cert_pem)]
-      )
+    with {:ok, %HTTPoison.Response{body: body, headers: headers, status_code: status_code}} <-
+           HTTPoison.request(
+             method,
+             url_query(stub_path, query_string),
+             body,
+             headers,
+             recv_timeout: @timeout_ms,
+             # See https://github.com/edgurgel/httpoison/issues/294 for
+             # more
+             ssl: [cacertfile: Application.get_env(:stubbex, :cert_pem)]
+           ) do
+      headers =
+        Enum.flat_map(headers, fn
+          # Get rid of "Transfer-Encoding: chunked" header because
+          # HTTPoison is accumulating the entire response body anyway, so
+          # it wouldn't be correct to send an entire response body with
+          # this header back to our client.
+          {"Transfer-Encoding", "chunked"} ->
+            []
 
-    headers =
-      Enum.flat_map(headers, fn
-        # Get rid of "Transfer-Encoding: chunked" header because HTTPoison
-        # is accumulating the entire response body anyway, so it wouldn't
-        # be correct to send an entire response body with this header back
-        # to our client.
-        {"Transfer-Encoding", "chunked"} ->
-          []
+          # Need to ensure all header names are lowercased, otherwise
+          # Phoenix will put in its own values for some of the headers,
+          # like "Server".
+          {header, value} ->
+            [{String.downcase(header), value}]
+        end)
 
-        # Need to ensure all header names are lowercased, otherwise Phoenix
-        # will put in its own values for some of the headers, like
-        # "Server".
-        {header, value} ->
-          [{String.downcase(header), value}]
-      end)
-
-    %{body: body, headers: headers, status_code: status_code}
+      {:ok, %{body: body, headers: headers, status_code: status_code}}
+    end
   end
 
   defp url_query(stub_path, ""), do: path_to_url(stub_path)

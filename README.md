@@ -26,7 +26,8 @@ with a single command.
 If you want to set up stubs manually, you have to place the stub files
 in the format that Stubbex expects, at the right location, as explained
 below. However, you can also take advantage of Stubbex's initial
-recording ability to edit already-existing stub files in place.
+recording ability to edit already-existing stub files in place–even for
+services that haven't been written yet.
 
 ## Concurrency
 
@@ -146,6 +147,35 @@ capture and replay the stubs for you. The stubs will be available both
 during iterative development and test suite runs as long as they use the
 same QA config.
 
+### Stubbing Non-Existent Endpoints
+
+Sometimes you'll need to stub out responses from endpoints that haven't
+actually been written yet. Manually naming and placing the stub files in
+the right directories would be a pain. Fortunately, Stubbex
+automatically generates stub files for you _even for endpoints that
+don't exist._ For example, you can send the following request:
+
+```
+curl localhost:4000/stubs/http/bla
+```
+
+Stubbex will try to get the response, see that it can't, and put a stub
+file with the right name, in the right place, _with a 404 status_ and an
+empty body:
+
+```
+~/src/stubbex $ less stubs/http/bla/FC4443CF188F5039AB8C6C96FC500EB9.json
+{
+  "response": {
+    "status_code": 404,
+    "headers": {},
+    "body": ""
+  },...
+```
+
+You can edit this stub, put in whatever response you need, and keep
+going.
+
 **WARNING:** don't use Postman or other browser-based tools to make
 requests to Stubbex for the purpose of setting up stubs for later use.
 They may add additional headers beyond your control, and Stubbex's
@@ -213,8 +243,8 @@ the template markup.
 
 You may be thinking, how to get a stub in the first place, to start
 editing? Simple! Let Stubbex record it for you by first hitting a real
-endpoint. Then add the `.eex` file extension to the stub JSON file and
-insert whatever markup you need.
+(or fake!) endpoint. Then add the `.eex` file extension to the stub JSON
+file and insert whatever markup you need.
 
 ### Troubleshooting
 
