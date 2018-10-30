@@ -9,6 +9,20 @@ saved stubs against the real responses.
 In other words, Stubbex sets up what Martin Fowler calls a
 [self-initializing fake](https://martinfowler.com/bliki/SelfInitializingFake.html).
 
+## Guide
+
+* [Emphasis on Simplicity](#emphasis-on-simplicity)
+* [Concurrency](#concurrency)
+* [Request Precision](#request-precision)
+* [Example](#example)
+* [The Hash](#the-hash)
+* [Developer Workflow](#developer-workflow)
+  * [Stubbing Non-Existent Endpoints](#stubbing-non-existent-endpoints)
+* [Templating the Response](#templating-the-response)
+  * [Troubleshooting](#troubleshooting)
+* [Validating the Stubs](#validating-the-stubs)
+* [Limitations](#limitations)
+
 What sets Stubbex apart (in my opinion) are three things:
 
 ## Emphasis on Simplicity
