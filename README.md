@@ -213,16 +213,16 @@ requests). If you want to set up stubs beforehand, you can:
 
 ## Templating the Response
 
-You can template response stub files and Stubbex will immediately pick up
-changes to the stubs and start serving on-the-fly evaluated responses.
-Templates are named like `hash.json.eex` (they are [Embedded
+You can template response stub files and Stubbex will immediately pick
+up changes to the stubs and start serving on-the-fly evaluated
+responses. Templates are named like `hash.json.eex` (they are [Embedded
 Elixir](https://hexdocs.pm/eex/EEx.html#module-tags) files) and can
-contain any valid Elixir language expression as well as refer to
-request parameters. If you have a template like
+contain any valid Elixir language expression as well as refer to request
+parameters. If you have a template like
 `stubs/https/jsonplaceholder.typicode.com/todos/1/E406D55E4DBB26C8050FCDC3D20B7CAA.json.eex`,
-you can edit it with your favourite text editor and insert valid
-markup according to the rules of EEx. For example, the above stub by
-default has a body like this:
+you can edit it with your favourite text editor and insert valid markup
+according to the rules of EEx. For example, the above stub by default
+has a body like this:
 
 ```
 "body": "{\n  \"userId\": 1,\n  \"id\": 1,\n  \"title\": \"delectus aut autem\",\n  \"completed\": false\n}"
@@ -331,9 +331,16 @@ and will error if you try. I think this is a reasonable balance if
 you're trying to delegate validating stubs to service providers. They
 would just worry about their own stubs.
 
+*Tip:* when validating long responses, it's helpful to pipe the output
+into `less -R`, because it can understand and show colours:
+
+```
+~/src/stubbex $ curl localhost:4000/validations/... | less -R
+```
+
 ## Limitations
 
-* No tests right now
-* No documentation right now (other than the above)
+* Not enough tests right now (run with `mix test.watch --stale` for
+  continuous iterate-and-run cycle)
 * No benchmarks right now
 
