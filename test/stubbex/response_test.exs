@@ -17,11 +17,11 @@ defmodule Stubbex.ResponseTest do
 
   describe "encode" do
     test "preserves status code" do
-      assert Response.encode(@response).status_code == @status_code
+      assert Response.encode(@response).status_code === @status_code
     end
 
     test "preserves body if Content-Encoding is not gzip" do
-      assert Response.encode(@response).body == @body
+      assert Response.encode(@response).body === @body
     end
 
     test "transforms body if Content-Encoding is gzip" do
@@ -32,7 +32,7 @@ defmodule Stubbex.ResponseTest do
 
   describe "decode" do
     test "preserves headers if body is empty" do
-      assert Response.decode(%{@encoded_response | "body" => ""}).headers == @headers
+      assert Response.decode(%{@encoded_response | "body" => ""}).headers === @headers
     end
 
     test "corrects Content-Length header if body is not empty" do
@@ -45,15 +45,15 @@ defmodule Stubbex.ResponseTest do
           end
         )
 
-      assert content_length == 1
+      assert content_length === 1
     end
 
     test "preserves status code" do
-      assert Response.decode(@encoded_response).status_code == @status_code
+      assert Response.decode(@encoded_response).status_code === @status_code
     end
 
     test "preserves body if Content-Encoding is not gzip" do
-      assert Response.decode(@encoded_response).body == @body
+      assert Response.decode(@encoded_response).body === @body
     end
 
     test "transforms body if Content-Encoding is gzip" do
@@ -66,7 +66,7 @@ defmodule Stubbex.ResponseTest do
             "body" => gzipped_body
         })
 
-      assert response.body == @body
+      assert response.body === @body
     end
   end
 end
