@@ -182,14 +182,14 @@ curl localhost:4000/stubs/http/bla
 ```
 
 Stubbex will try to get the response, see that it can't, and put a stub
-file with the right name, in the right place, _with a 404 status_ and an
-empty body:
+file with the right name, in the right place, _with a 501 (not
+implemented) status_ and an empty body:
 
 ```
 ~/src/stubbex $ less stubs/http/bla/FC4443CF188F5039AB8C6C96FC500EB9.json
 {
   "response": {
-    "status_code": 404,
+    "status_code": 501,
     "headers": {},
     "body": ""
   },...

@@ -107,7 +107,7 @@ defmodule Stubbex.Endpoint do
               %{
                 body: "",
                 headers: [],
-                status_code: 404
+                status_code: 501
               }
           end
 
