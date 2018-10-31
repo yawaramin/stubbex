@@ -4,13 +4,8 @@ defmodule Stubbex.Endpoint do
   alias Stubbex.Response
   alias Stubbex.Stub
 
-  @typep mappings :: %{required(md5_input) => Response.t()}
-  @typep md5_input :: %{
-           method: String.t(),
-           query_string: String.t(),
-           headers: Response.headers(),
-           body: binary
-         }
+  @typep mappings :: %{required(md5) => Response.t()}
+  @typep md5 :: String.t()
 
   @timeout_ms Application.get_env(:stubbex, :timeout_ms)
   @stubs_dir Application.get_env(:stubbex, :stubs_dir)
@@ -82,21 +77,23 @@ defmodule Stubbex.Endpoint do
         url = path_to_url(stub_path)
 
         %{"response" => response} =
-          Stub.get_stub(File.read!(file_path_eex), Map.put(md5_input, :url, url))
+          file_path_eex
+          |> File.read!()
+          |> Stub.get_stub(Map.put(md5_input, :url, url))
 
         {:reply, Response.decode(response), {stub_path, mappings}, @timeout_ms}
 
-      Map.has_key?(mappings, md5_input) ->
+      Map.has_key?(mappings, md5) ->
         {
           :reply,
-          Map.get(mappings, md5_input),
+          Map.get(mappings, md5),
           {stub_path, mappings},
           @timeout_ms
         }
 
       File.exists?(file_path) ->
         %{"response" => response} = file_path |> File.read!() |> Stub.get_stub()
-        reply_update(Response.decode(response), stub_path, mappings, md5_input)
+        reply_update(Response.decode(response), stub_path, mappings, md5)
 
       true ->
         response =
@@ -131,7 +128,7 @@ defmodule Stubbex.Endpoint do
             ])
         end
 
-        reply_update(response, stub_path, mappings, md5_input)
+        reply_update(response, stub_path, mappings, md5)
     end
   end
 
@@ -218,11 +215,11 @@ defmodule Stubbex.Endpoint do
   @impl true
   def handle_info(:timeout, _state), do: {:stop, :shutdown, nil}
 
-  defp reply_update(response, stub_path, mappings, md5_input) do
+  defp reply_update(response, stub_path, mappings, md5) do
     {
       :reply,
       response,
-      {stub_path, Map.put(mappings, md5_input, response)},
+      {stub_path, Map.put(mappings, md5, response)},
       @timeout_ms
     }
   end
