@@ -10,6 +10,7 @@ defmodule Stubbex.Endpoint do
   @timeout_ms Application.get_env(:stubbex, :timeout_ms)
   @stubs_dir Application.get_env(:stubbex, :stubs_dir)
   @pretty_opts [{:pretty, true}, {:limit, 100_000}]
+  @n "\n"
 
   # Client
 
@@ -176,23 +177,31 @@ defmodule Stubbex.Endpoint do
             Stub.get_stub(contents)
           end
 
-        {:ok, real_response} = real_request(method, url_path, query_string, headers, body)
-        real_response = real_response |> Response.encode() |> Poison.encode!(@pretty_opts)
-
         header = [
           :inverse,
           " ",
           url_query(url_path, query_string),
           " ",
           :reset,
-          "\n"
+          @n
         ]
 
         validation =
-          response
-          |> Poison.encode!(@pretty_opts)
-          |> String.myers_difference(real_response)
-          |> diff_color
+          case real_request(method, url_path, query_string, headers, body) do
+            {:ok, real_response} ->
+              real_response =
+                real_response
+                |> Response.encode()
+                |> Poison.encode!(@pretty_opts)
+
+              response
+              |> Poison.encode!(@pretty_opts)
+              |> String.myers_difference(real_response)
+              |> diff_color
+
+            {:error, %HTTPoison.Error{reason: :nxdomain}} ->
+              [:red, "(Could not validate: connection failed)", :reset, @n]
+          end
 
         case Plug.Conn.chunk(conn, IO.ANSI.format([header | validation])) do
           {:ok, conn} -> {:cont, conn}
