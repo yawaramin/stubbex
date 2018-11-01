@@ -4,6 +4,7 @@ defmodule Stubbex.Endpoint do
   alias Stubbex.Response
   alias Stubbex.Stub
 
+  @typep state :: {String.t(), mappings}
   @typep mappings :: %{required(md5) => Response.t()}
   @typep md5 :: String.t()
 
@@ -11,6 +12,7 @@ defmodule Stubbex.Endpoint do
   @stubs_dir Application.get_env(:stubbex, :stubs_dir)
   @pretty_opts [{:pretty, true}, {:limit, 100_000}]
   @n "\n"
+  @json ".json"
 
   # Client
 
@@ -38,10 +40,13 @@ defmodule Stubbex.Endpoint do
 
   # Server
 
-  @spec init(String.t()) :: {:ok, {String.t(), mappings}}
   @impl true
+  @spec init(String.t()) :: {:ok, state}
   def init(stub_path) do
     Process.flag(:trap_exit, true)
+    {:ok, watcher} = FileSystem.start_link(dirs: [Path.join(@stubs_dir, stub_path)])
+
+    FileSystem.subscribe(watcher)
     {:ok, {stub_path, %{}}}
   end
 
@@ -67,7 +72,7 @@ defmodule Stubbex.Endpoint do
       |> Base.encode16()
 
     file_path =
-      [@stubs_dir, stub_path, md5 <> ".json"]
+      [@stubs_dir, stub_path, md5 <> @json]
       |> Path.join()
       |> String.replace("//", "/")
 
@@ -212,6 +217,24 @@ defmodule Stubbex.Endpoint do
     {:reply, conn, state, @timeout_ms}
   end
 
+  @impl true
+  @spec handle_info({:file_event, pid, {String.t(), [atom, ...]}}, state) ::
+          {:noreply, state, pos_integer}
+  def handle_info({:file_event, _pid, {file_path, events}}, {stub_path, mappings}) do
+    mappings =
+      if :modified in events and String.ends_with?(file_path, @json) do
+        Map.delete(mappings, Path.basename(file_path, @json))
+      else
+        mappings
+      end
+
+    {:noreply, {stub_path, mappings}, @timeout_ms}
+  end
+
+  @impl true
+  @spec handle_info(:timeout, state) :: {:stop, :shutdown, nil}
+  def handle_info(:timeout, _state), do: {:stop, :shutdown, nil}
+
   defp diff_color(myers) do
     myers
     |> Enum.flat_map(fn
@@ -220,9 +243,6 @@ defmodule Stubbex.Endpoint do
       {:ins, text} -> [:green, text]
     end)
   end
-
-  @impl true
-  def handle_info(:timeout, _state), do: {:stop, :shutdown, nil}
 
   defp reply_update(response, stub_path, mappings, md5) do
     {

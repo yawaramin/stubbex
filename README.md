@@ -17,6 +17,7 @@ In other words, Stubbex sets up what Martin Fowler calls a
 * [Example](#example)
 * [The Hash](#the-hash)
 * [Developer Workflow](#developer-workflow)
+  * [Editing Existing Stubs](#editing-existing-stubs)
   * [Stubbing Non-Existent Endpoints](#stubbing-non-existent-endpoints)
 * [Templating the Response](#templating-the-response)
   * [Troubleshooting](#troubleshooting)
@@ -169,6 +170,19 @@ capture and replay the stubs for you. The stubs will be available both
 during iterative development and test suite runs as long as they use the
 same QA config.
 
+### Editing Existing Stubs
+
+Stubbex caches all non-templated (i.e. static) stubs in memory for a
+period of time (by default, ten minutes) to serve the response as fast
+as possible. But you might like to edit an existing stub and immediately
+see the changed response. So, Stubbex will automatically clear its cache
+for a stub when you edit that stub. This helps with iterative
+development.
+
+Note that on Linux and the BSDs you'll need to install `inotify-tools`
+to make instant edits work. See
+https://hexdocs.pm/file_system/readme.html for more details.
+
 ### Stubbing Non-Existent Endpoints
 
 Sometimes you'll need to stub out responses from endpoints that haven't
@@ -267,6 +281,10 @@ You may be thinking, how to get a stub in the first place, to start
 editing? Simple! Let Stubbex record it for you by first hitting a real
 (or fake!) endpoint. Then add the `.eex` file extension to the stub JSON
 file and insert whatever markup you need.
+
+Note that Stubbex doesn't cache template stub responses, because these
+might change dynamically with every request (e.g., you might inject the
+current time into the response).
 
 ### Troubleshooting
 

@@ -39,7 +39,8 @@ defmodule Stubbex.Mixfile do
       {:gettext, "~> 0.11"},
       {:cowboy, "~> 1.0"},
       {:httpoison, "~> 1.0"},
-      {:mix_test_watch, "~> 0.9.0", only: :dev, runtime: false}
+      {:mix_test_watch, "~> 0.9.0", only: :dev, runtime: false},
+      {:file_system, "~> 0.2.6"}
     ]
   end
 end
