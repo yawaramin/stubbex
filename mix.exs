@@ -40,7 +40,8 @@ defmodule Stubbex.Mixfile do
       {:cowboy, "~> 1.0"},
       {:httpoison, "~> 1.0"},
       {:mix_test_watch, "~> 0.9.0", only: :dev, runtime: false},
-      {:file_system, "~> 0.2.6"}
+      {:file_system, "~> 0.2.6"},
+      {:distillery, "~> 2.0"}
     ]
   end
 end
