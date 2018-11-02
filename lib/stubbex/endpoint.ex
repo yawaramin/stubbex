@@ -110,7 +110,7 @@ defmodule Stubbex.Endpoint do
       Map.has_key?(mappings, md5) ->
         {
           :reply,
-          Map.get(mappings, md5),
+          mappings |> Map.get(md5) |> Map.put(:cookie, md5),
           {stub_path, mappings},
           @timeout_ms
         }
