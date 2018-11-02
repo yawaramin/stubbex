@@ -16,6 +16,7 @@ In other words, Stubbex sets up what Martin Fowler calls a
 * [Request Precision](#request-precision)
 * [Example](#example)
 * [The Hash](#the-hash)
+  * [The Stubbex Cookie and Scenarios](#the-stubbex-cookie-and-scenarios)
 * [Developer Workflow](#developer-workflow)
   * [Editing Existing Stubs](#editing-existing-stubs)
   * [Stubbing Non-Existent Endpoints](#stubbing-non-existent-endpoints)
@@ -127,11 +128,12 @@ Notice the file name of the stub, `E406D55E....json`. That's an MD5-
 encoded hash of the request details:
 
 * Method (GET, POST, etc.)
+* URL
 * Query parameters
 * Headers
 * Body
 
-These four details uniquely identify any request _to a given endpoint._
+These five details uniquely identify any request, to any endpoint.
 Stubbex uses this hash to look up the correct response for any request,
 and if it doesn't have it, it will fetch it and save it for next time.
 
@@ -140,11 +142,41 @@ response stub for any call without having to open and parse the stub
 file itself. It effectively uses the filesystem as an index data
 structure.
 
-You might be screaming at me, 'Why MD5?! Why not SHA-1/256/etc.?' The
-thing is, mapping a request to a simple file name for an internal-use
-tool is not a security-sensitive application. In fact, if people can
-easily reverse-derive the request parameters from the MD5 hash, that
-makes Stubbex potentially even more interoperable with other tools.
+### The Stubbex Cookie and Scenarios
+
+An implicit assumption here (indeed, Stubbex's basic assumption) is that
+each _unique_ request has _exactly one_ response. So for example, a `GET
+/cart` request should _always_ return the exact same response, for
+example `{}`. But then what if the user adds an item to their cart? Most
+real-world servers use some session-management mechanism, like a cookie,
+to track the user's current state. Stubbex does the same thing; it sets
+a `stubbex` cookie in every response that is exactly equal to the hash
+of the request parameters.
+
+And, if your app respects the `Set-Cookie` header and sends servers the
+cookies they set (including the `stubbex` cookie), you can establish an
+audit trail between every request and response. Here's an example of how
+it would work:
+
+```
+Client: log in
+Stubbex: response with cookie1 generated from log in request
+C: get cart with cookie1 (i.e. a `Cookie: stubbex=cookie1` header
+   because the client respects the server cookies)
+S: response with cookie2 generated from get cart request with cookie1
+C: add item to cart with cookie2
+S: response with cookie3 generated from add item request with cookie2
+C: get cart with cookie3
+...
+```
+
+Effectively, you have a scenario (or a session) established by a chain
+of `stubbex` cookies. No config and no special commands; just the
+idiomatic HTTP state management mechanism. And, because Stubbex is an
+immutable (well, at least in the same way that git is) store of
+request-response pairs, you will deterministically get the exact same
+response for every request with the right cookies–even for otherwise
+identical requests like `GET /cart`.
 
 ## Developer Workflow
 

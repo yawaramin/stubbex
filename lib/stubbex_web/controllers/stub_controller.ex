@@ -6,7 +6,7 @@ defmodule StubbexWeb.StubController do
   def stub(conn, _params) do
     {:ok, body, conn} = read_body(conn)
 
-    %{body: body, headers: headers, status_code: status_code} =
+    %{body: body, headers: headers, status_code: status_code, cookie: cookie} =
       Dispatcher.stub(
         conn.method,
         conn.request_path,
@@ -17,9 +17,11 @@ defmodule StubbexWeb.StubController do
 
     conn
     |> merge_resp_headers(headers)
+    |> put_resp_cookie("stubbex", cookie)
     |> send_resp(status_code, body)
   end
 
+  @spec validations(Plug.Conn.t(), any) :: Plug.Conn.t()
   def validations(conn, _params) do
     conn = send_chunked(conn, 200)
     Dispatcher.validations(conn)

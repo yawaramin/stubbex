@@ -7,12 +7,13 @@ defmodule Stubbex.Dispatcher do
     DynamicSupervisor.start_link(__MODULE__, [], name: __MODULE__)
   end
 
-  @spec stub(String.t(), String.t(), String.t(), Response.headers(), binary) :: Response.t()
+  @spec stub(String.t(), String.t(), String.t(), Response.headers(), binary) :: Endpoint.stub()
   def stub(method, stub_path, query_string, headers, body) do
     start_endpoint(stub_path)
     Endpoint.stub(method, stub_path, query_string, headers, body)
   end
 
+  @spec validations(Plug.Conn.t()) :: Plug.Conn.t()
   def validations(conn) do
     path = stub_path(conn.request_path)
 

@@ -4,9 +4,19 @@ defmodule Stubbex.Endpoint do
   alias Stubbex.Response
   alias Stubbex.Stub
 
+  @typedoc """
+  Adds a cookie to the actual response so that clients can coordinate
+  test scenarios with Stubbex.
+  """
+  @type stub :: %{
+          body: binary,
+          headers: Response.headers(),
+          cookie: md5,
+          status_code: Response.status_code()
+        }
+  @type md5 :: String.t()
   @typep state :: {String.t(), mappings}
   @typep mappings :: %{required(md5) => Response.t()}
-  @typep md5 :: String.t()
 
   @timeout_ms Application.get_env(:stubbex, :timeout_ms)
   @stubs_dir Application.get_env(:stubbex, :stubs_dir)
@@ -21,7 +31,7 @@ defmodule Stubbex.Endpoint do
     GenServer.start_link(__MODULE__, stub_path, name: {:global, stub_path})
   end
 
-  @spec stub(String.t(), String.t(), String.t(), Response.headers(), binary) :: Response.t()
+  @spec stub(String.t(), String.t(), String.t(), Response.headers(), String.t()) :: stub
   def stub(method, stub_path, query_string \\ "", headers \\ [], body \\ "") do
     GenServer.call(
       {:global, stub_path},
@@ -30,6 +40,7 @@ defmodule Stubbex.Endpoint do
     )
   end
 
+  @spec validations(Plug.Conn.t(), String.t()) :: Plug.Conn.t()
   def validations(conn, stub_path) do
     GenServer.call(
       {:global, stub_path},
@@ -51,15 +62,22 @@ defmodule Stubbex.Endpoint do
   end
 
   @impl true
+  @spec handle_call(
+          {:stub, String.t(), String.t(), Response.headers(), binary},
+          GenServer.from(),
+          state
+        ) :: {:reply, Response.t(), state, pos_integer}
   def handle_call(
         {:stub, method, query_string, headers, body},
         _from,
         {stub_path, mappings}
       ) do
     headers = real_host(headers, stub_path)
+    url = path_to_url(stub_path)
 
     md5_input = %{
       method: method,
+      url: url,
       query_string: query_string,
       headers: Map.new(headers),
       body: body
@@ -80,14 +98,14 @@ defmodule Stubbex.Endpoint do
 
     cond do
       File.exists?(file_path_eex) ->
-        url = path_to_url(stub_path)
+        %{"response" => response} = file_path_eex |> File.read!() |> Stub.get_stub(md5_input)
 
-        %{"response" => response} =
-          file_path_eex
-          |> File.read!()
-          |> Stub.get_stub(Map.put(md5_input, :url, url))
-
-        {:reply, Response.decode(response), {stub_path, mappings}, @timeout_ms}
+        {
+          :reply,
+          response |> Response.decode() |> Map.put(:cookie, md5),
+          {stub_path, mappings},
+          @timeout_ms
+        }
 
       Map.has_key?(mappings, md5) ->
         {
@@ -139,6 +157,11 @@ defmodule Stubbex.Endpoint do
   end
 
   @impl true
+  @spec handle_call(
+          {:validations, Plug.Conn.t(), String.t()},
+          GenServer.from(),
+          state
+        ) :: {:reply, Plug.Conn.t(), state, pos_integer}
   def handle_call({:validations, conn, path_glob}, _from, state) do
     conn =
       path_glob
@@ -247,7 +270,7 @@ defmodule Stubbex.Endpoint do
   defp reply_update(response, stub_path, mappings, md5) do
     {
       :reply,
-      response,
+      Map.put(response, :cookie, md5),
       {stub_path, Map.put(mappings, md5, response)},
       @timeout_ms
     }

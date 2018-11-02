@@ -4,11 +4,7 @@ defmodule Stubbex.Response do
   JSON-suitable storage format.
   """
 
-  @type t :: %{
-          body: binary,
-          headers: headers,
-          status_code: status_code()
-        }
+  @type t :: %{body: binary, headers: headers, status_code: status_code()}
   @type headers :: [{String.t(), String.t()}]
   @type headers_map :: %{required(String.t()) => String.t()}
   @type status_code :: 100..599
@@ -31,7 +27,11 @@ defmodule Stubbex.Response do
   end
 
   @spec decode(json_map) :: t
-  def decode(%{"status_code" => status_code, "headers" => headers, "body" => body}) do
+  def decode(%{
+        "status_code" => status_code,
+        "headers" => headers,
+        "body" => body
+      }) do
     headers =
       if body == "" do
         headers
