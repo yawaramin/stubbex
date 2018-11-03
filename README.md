@@ -189,12 +189,12 @@ identical requests like `GET /cart`.
 ## Developer Workflow
 
 To use Stubbex as part of your dev workflow, first you'll need a running
-Stubbex instance. The easiest way to get it running is as shown above
+Stubbex instance. The easiest way to get it running is as shown above.
 Alternatively, you might
-[deploy](https://hexdocs.pm/phoenix/deployment.html#content) Stubbex to
-a shared internal server (**WARNING:** by no means expose it to the
-outside world!) and use that for development and testing across multiple
-developer machines and CI builds.
+[deploy](https://hexdocs.pm/distillery/guides/systemd.html#run-app-in-foreground-using-a-simple-systemd-configuration)
+Stubbex to a shared internal server (**WARNING:** by no means expose it
+to the outside world!) and use that for development and testing across
+multiple developer machines and CI builds.
 
 Next, set up a QA/test config in your app that points all the base URLs
 for every service call to Stubbex, e.g.
@@ -398,7 +398,7 @@ into `less -R`, because it can understand and show colours:
 ### JSON Schema Validation
 
 Sometimes it isn't practical to validate the entire response body,
-because a real server response will differ greatly between responses. In
+because a real server response might differ greatly between requests. In
 these cases it's still valuable to know whether the _shape_ of the
 response matches what you expect.
 
