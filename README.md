@@ -14,6 +14,7 @@ In other words, Stubbex sets up what Martin Fowler calls a
 * [Emphasis on Simplicity](#emphasis-on-simplicity)
 * [Concurrency](#concurrency)
 * [Request Precision](#request-precision)
+* [Installation](#installation)
 * [Example](#example)
 * [The Hash](#the-hash)
   * [The Stubbex Cookie and Scenarios](#the-stubbex-cookie-and-scenarios)
@@ -72,6 +73,18 @@ body if any. You can get it to save and give you a response with
 complete precision. So you can stub any number of different hosts,
 endpoints, and specific requests.
 
+## Installation
+
+You can either compile and run Stubbex using a local installation of
+Elixir, or download a pre-built release tarball from the releases page:
+https://github.com/yawaramin/stubbex/releases . For example, say you
+download `stubbex-0.1.0.tar.gz` and unpack it:
+
+```
+~/src $ mkdir stubbex; cd stubbex
+~/src/stubbex $ tar xzf stubbex-0.1.0.tar.gz
+```
+
 ## Example
 
 Suppose you want to stub the response from a JSON Placeholder URL,
@@ -79,13 +92,7 @@ https://jsonplaceholder.typicode.com/todos/1 . First, you start up
 Stubbex:
 
 ```
-~/src/stubbex $ mix deps.get # First time only
-              $ # Optional config with defaults, see config/config.exs for details:
-              $ export stubbex_cert_pem=/etc/ssl/cert.pem
-              $ export stubbex_stubs_dir=.
-              $ export stubbex_timeout_ms=600000
-              $ # Run the stub server:
-              $ mix phx.server
+~/src/stubbex $ PORT=4000 ./bin/stubbex foreground
 ```
 
 Then, send it a request:
@@ -182,9 +189,8 @@ identical requests like `GET /cart`.
 ## Developer Workflow
 
 To use Stubbex as part of your dev workflow, first you'll need a running
-Stubbex instance. The easiest way to get it running is as shown
-above–but you will need to install [Elixir](https://elixir-lang.org/) on
-your dev machine. Alternatively, you might
+Stubbex instance. The easiest way to get it running is as shown above
+Alternatively, you might
 [deploy](https://hexdocs.pm/phoenix/deployment.html#content) Stubbex to
 a shared internal server (**WARNING:** by no means expose it to the
 outside world!) and use that for development and testing across multiple
@@ -405,7 +411,7 @@ then rename the `stubs/path/to/HASH.json` file to
 schema validation for this stub. Then, put the response's expected JSON
 Schema object in the stub's `response.body` field.
 
-For example, here's an example schema for the todos we show above:
+For example, here's a schema for the todos we show above:
 
 ```
 {
