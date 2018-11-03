@@ -23,6 +23,7 @@ In other words, Stubbex sets up what Martin Fowler calls a
 * [Templating the Response](#templating-the-response)
   * [Troubleshooting](#troubleshooting)
 * [Validating the Stubs](#validating-the-stubs)
+  * [JSON Schema Validation](#json-schema-validation)
 * [Limitations](#limitations)
 
 What sets Stubbex apart (in my opinion) are three things:
@@ -387,6 +388,69 @@ into `less -R`, because it can understand and show colours:
 ```
 ~/src/stubbex $ curl localhost:4000/validations/... | less -R
 ```
+
+### JSON Schema Validation
+
+Sometimes it isn't practical to validate the entire response body,
+because a real server response will differ greatly between responses. In
+these cases it's still valuable to know whether the _shape_ of the
+response matches what you expect.
+
+Stubbex allows you to validate the shape of the response by specifying
+its [JSON Schema](http://json-schema.org/) in your stub. The workflow
+would look very similar to the other Stubbex workflows: start by sending
+a normal stub request from your app (which you may already have done),
+then rename the `stubs/path/to/HASH.json` file to
+`stubs/path/to/HASH.json.schema`. This will tell Stubbex to use JSON
+schema validation for this stub. Then, put the response's expected JSON
+Schema object in the stub's `response.body` field.
+
+For example, here's an example schema for the todos we show above:
+
+```
+{
+  "url": "https://jsonplaceholder.typicode.com/todos/1",
+  "response": {
+    ...,
+    "body": {
+      "$schema": "http://json-schema.org/draft-04/schema#",
+      "title": "Todo",
+      "description": "A reminder.",
+      "type": "object",
+      "properties": {
+        "userId": {"type": "integer"},
+        "id": {"type": "integer"},
+        "title": {"type": "string"},
+        "completed": {"type": "boolean"}
+      },
+      "required": ["userId", "id", "title", "completed"]
+    }
+  },
+  ...
+}
+```
+
+**Note:** due to the specific schema validation library that Stubbex
+uses, the schemas must be versioned at Draft 4 at most.
+
+Finally, to do an actual validation, run the usual validation command:
+
+```
+~/src/stubbex $ curl localhost:4000/validations/https/jsonplaceholder.typicode.com/todos/1
+```
+
+<img width="1383" alt="screen shot 2018-11-02 at 22 21 07" src="https://user-images.githubusercontent.com/6997/47947187-0f97f600-deee-11e8-9fe3-a84a4e59542b.png">
+
+The response body is a green `:ok` to indicate that the schema
+validation succeded.
+
+Now, to simulate a validation error, try changing the `completed`
+attribute type to `string`, and rerun the validation:
+
+<img width="1384" alt="screen shot 2018-11-02 at 22 22 04" src="https://user-images.githubusercontent.com/6997/47947189-1e7ea880-deee-11e8-8bc8-697f1830b3c0.png">
+
+The response body is a red description of the error and the path to the
+erroring attribute.
 
 ## Limitations
 

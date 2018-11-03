@@ -44,7 +44,8 @@ defmodule Stubbex.Endpoint do
   def validations(conn, stub_path) do
     GenServer.call(
       {:global, stub_path},
-      {:validations, conn, Path.join([@stubs_dir, stub_path, "**", "*.{json,json.eex}"])},
+      {:validations, conn,
+       Path.join([@stubs_dir, stub_path, "**", "*.{json,json.eex,json.schema}"])},
       @timeout_ms
     )
   end
@@ -179,6 +180,7 @@ defmodule Stubbex.Endpoint do
         } =
           if String.ends_with?(stub_file, "eex") do
             %{
+              "url" => url,
               "query_string" => query_string,
               "method" => method,
               "headers" => headers,
@@ -191,8 +193,6 @@ defmodule Stubbex.Endpoint do
                 headers: %{},
                 body: ""
               })
-
-            url = path_to_url(url_path)
 
             Stub.get_stub(contents, %{
               url: url,
@@ -217,14 +217,18 @@ defmodule Stubbex.Endpoint do
         validation =
           case real_request(method, url_path, query_string, headers, body) do
             {:ok, real_response} ->
-              real_response =
-                real_response
-                |> Response.encode()
-                |> Poison.encode!(@pretty_opts)
+              real_response = Response.encode(real_response)
+
+              {response, real_response} =
+                if String.ends_with?(stub_file, "schema") do
+                  inject_schema_validation(response, real_response)
+                else
+                  {response, real_response}
+                end
 
               response
               |> Poison.encode!(@pretty_opts)
-              |> String.myers_difference(real_response)
+              |> String.myers_difference(Poison.encode!(real_response))
               |> diff_color
 
             {:error, %HTTPoison.Error{reason: :nxdomain}} ->
@@ -257,6 +261,28 @@ defmodule Stubbex.Endpoint do
   @impl true
   @spec handle_info(:timeout, state) :: {:stop, :shutdown, nil}
   def handle_info(:timeout, _state), do: {:stop, :shutdown, nil}
+
+  # The way this works is by taking advantage of the fact that a string
+  # body present in the stub but not in the real response will be
+  # coloured red, and a string body in the real response but not in the
+  # stub response will be coloured green. So we put the error message in
+  # the stub response body and clear out the real response body, and
+  # vice-versa.
+  defp inject_schema_validation(
+         %{"body" => schema} = stub_response,
+         %{body: json} = real_response
+       ) do
+    json_schema = ExJsonSchema.Schema.resolve(schema)
+    json = Poison.decode!(json)
+
+    case ExJsonSchema.Validator.validate(json_schema, json) do
+      :ok ->
+        {%{stub_response | "body" => ""}, %{real_response | body: ":ok"}}
+
+      {:error, errors} ->
+        {%{stub_response | "body" => inspect(errors)}, %{real_response | body: ""}}
+    end
+  end
 
   defp diff_color(myers) do
     myers

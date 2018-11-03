@@ -4,7 +4,7 @@ defmodule Stubbex.Mixfile do
   def project do
     [
       app: :stubbex,
-      version: "0.0.2",
+      version: "0.1.0",
       elixir: "~> 1.4",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix, :gettext] ++ Mix.compilers(),
@@ -41,7 +41,8 @@ defmodule Stubbex.Mixfile do
       {:httpoison, "~> 1.0"},
       {:mix_test_watch, "~> 0.9.0", only: :dev, runtime: false},
       {:file_system, "~> 0.2.6"},
-      {:distillery, "~> 2.0"}
+      {:distillery, "~> 2.0"},
+      {:ex_json_schema, "~> 0.5.4"}
     ]
   end
 end
