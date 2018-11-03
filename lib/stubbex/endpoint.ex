@@ -18,8 +18,6 @@ defmodule Stubbex.Endpoint do
   @typep state :: {String.t(), mappings}
   @typep mappings :: %{required(md5) => Response.t()}
 
-  @timeout_ms Application.get_env(:stubbex, :timeout_ms)
-  @stubs_dir Application.get_env(:stubbex, :stubs_dir)
   @pretty_opts [{:pretty, true}, {:limit, 100_000}]
   @n "\n"
   @json ".json"
@@ -36,7 +34,7 @@ defmodule Stubbex.Endpoint do
     GenServer.call(
       {:global, stub_path},
       {:stub, method, query_string, headers, body},
-      @timeout_ms
+      Application.get_env(:stubbex, :timeout_ms)
     )
   end
 
@@ -45,8 +43,13 @@ defmodule Stubbex.Endpoint do
     GenServer.call(
       {:global, stub_path},
       {:validations, conn,
-       Path.join([@stubs_dir, stub_path, "**", "*.{json,json.eex,json.schema}"])},
-      @timeout_ms
+       Path.join([
+         Application.get_env(:stubbex, :stubs_dir),
+         stub_path,
+         "**",
+         "*.{json,json.eex,json.schema}"
+       ])},
+      Application.get_env(:stubbex, :timeout_ms)
     )
   end
 
@@ -56,7 +59,11 @@ defmodule Stubbex.Endpoint do
   @spec init(String.t()) :: {:ok, state}
   def init(stub_path) do
     Process.flag(:trap_exit, true)
-    {:ok, watcher} = FileSystem.start_link(dirs: [Path.join(@stubs_dir, stub_path)])
+
+    {:ok, watcher} =
+      FileSystem.start_link(
+        dirs: [Path.join(Application.get_env(:stubbex, :stubs_dir), stub_path)]
+      )
 
     FileSystem.subscribe(watcher)
     {:ok, {stub_path, %{}}}
@@ -91,7 +98,7 @@ defmodule Stubbex.Endpoint do
       |> Base.encode16()
 
     file_path =
-      [@stubs_dir, stub_path, md5 <> @json]
+      [Application.get_env(:stubbex, :stubs_dir), stub_path, md5 <> @json]
       |> Path.join()
       |> String.replace("//", "/")
 
@@ -105,7 +112,7 @@ defmodule Stubbex.Endpoint do
           :reply,
           response |> Response.decode() |> Map.put(:cookie, md5),
           {stub_path, mappings},
-          @timeout_ms
+          Application.get_env(:stubbex, :timeout_ms)
         }
 
       Map.has_key?(mappings, md5) ->
@@ -113,7 +120,7 @@ defmodule Stubbex.Endpoint do
           :reply,
           mappings |> Map.get(md5) |> Map.put(:cookie, md5),
           {stub_path, mappings},
-          @timeout_ms
+          Application.get_env(:stubbex, :timeout_ms)
         }
 
       File.exists?(file_path) ->
@@ -140,7 +147,8 @@ defmodule Stubbex.Endpoint do
                md5_input
                |> Map.put(:response, Response.encode(response))
                |> Poison.encode_to_iodata(@pretty_opts),
-             :ok <- "." |> Path.join(stub_path) |> File.mkdir_p(),
+             :ok <-
+               Application.get_env(:stubbex, :stubs_dir) |> Path.join(stub_path) |> File.mkdir_p(),
              :ok <- File.write(file_path, file_body) do
           nil
         else
@@ -221,7 +229,7 @@ defmodule Stubbex.Endpoint do
 
               {response, real_response} =
                 if String.ends_with?(stub_file, "schema") do
-                  inject_schema_validation(response, real_response)
+                  Response.inject_schema_validation(response, real_response)
                 else
                   {response, real_response}
                 end
@@ -241,7 +249,7 @@ defmodule Stubbex.Endpoint do
         end
       end)
 
-    {:reply, conn, state, @timeout_ms}
+    {:reply, conn, state, Application.get_env(:stubbex, :timeout_ms)}
   end
 
   @impl true
@@ -255,34 +263,12 @@ defmodule Stubbex.Endpoint do
         mappings
       end
 
-    {:noreply, {stub_path, mappings}, @timeout_ms}
+    {:noreply, {stub_path, mappings}, Application.get_env(:stubbex, :timeout_ms)}
   end
 
   @impl true
   @spec handle_info(:timeout, state) :: {:stop, :shutdown, nil}
   def handle_info(:timeout, _state), do: {:stop, :shutdown, nil}
-
-  # The way this works is by taking advantage of the fact that a string
-  # body present in the stub but not in the real response will be
-  # coloured red, and a string body in the real response but not in the
-  # stub response will be coloured green. So we put the error message in
-  # the stub response body and clear out the real response body, and
-  # vice-versa.
-  defp inject_schema_validation(
-         %{"body" => schema} = stub_response,
-         %{body: json} = real_response
-       ) do
-    json_schema = ExJsonSchema.Schema.resolve(schema)
-    json = Poison.decode!(json)
-
-    case ExJsonSchema.Validator.validate(json_schema, json) do
-      :ok ->
-        {%{stub_response | "body" => ""}, %{real_response | body: ":ok"}}
-
-      {:error, errors} ->
-        {%{stub_response | "body" => inspect(errors)}, %{real_response | body: ""}}
-    end
-  end
 
   defp diff_color(myers) do
     myers
@@ -298,7 +284,7 @@ defmodule Stubbex.Endpoint do
       :reply,
       Map.put(response, :cookie, md5),
       {stub_path, Map.put(mappings, md5, response)},
-      @timeout_ms
+      Application.get_env(:stubbex, :timeout_ms)
     }
   end
 
@@ -311,7 +297,7 @@ defmodule Stubbex.Endpoint do
              url_query(stub_path, query_string),
              body,
              headers,
-             recv_timeout: @timeout_ms,
+             recv_timeout: Application.get_env(:stubbex, :timeout_ms),
              # See https://github.com/edgurgel/httpoison/issues/294 for
              # more
              ssl: [cacertfile: Application.get_env(:stubbex, :cert_pem)]
@@ -342,12 +328,14 @@ defmodule Stubbex.Endpoint do
     path_to_url(stub_path) <> "?" <> query_string
   end
 
-  defp path_to_url("/stubs/" <> path) do
-    String.replace(path, "/", "://", global: false)
-  end
+  defp path_to_url(path) do
+    path =
+      case String.split(path, Application.fetch_env!(:stubbex, :stubs_dir) <> "/stubs/") do
+        ["", path] -> path
+        ["/stubs/" <> path] -> path
+      end
 
-  defp path_to_url("stubs/" <> _path = path) do
-    path_to_url("/" <> path)
+    String.replace(path, "/", "://", global: false)
   end
 
   # Stubbex needs to call real requests with the "Host" header set

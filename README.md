@@ -15,6 +15,7 @@ In other words, Stubbex sets up what Martin Fowler calls a
 * [Concurrency](#concurrency)
 * [Request Precision](#request-precision)
 * [Installation](#installation)
+  * [Configuration](#configuration)
 * [Example](#example)
 * [The Hash](#the-hash)
   * [The Stubbex Cookie and Scenarios](#the-stubbex-cookie-and-scenarios)
@@ -84,6 +85,21 @@ download `stubbex-0.1.0.tar.gz` and unpack it:
 ~/src $ mkdir stubbex; cd stubbex
 ~/src/stubbex $ tar xzf stubbex-0.1.0.tar.gz
 ```
+
+### Configuration
+
+Stubbex has certain configurable options which it reads at startup from
+the system environment. These are:
+
+- `PORT:` mandatory port number, Stubbex will refuse to start up without
+  it
+- `stubbex_cert_pem:` optional path to a root HTTPS certificate (may be
+  needed for making HTTPS requests), default is `/etc/ssl/cert.pem`
+- `stubbex_stubs_dir:` optional path where Stubbex should keep the
+  `stubs` directory, default is `.`
+- `stubbex_timeout_ms:` optional numeric value of how long Stubbex
+  should wait for requests and responses, in milliseconds. Default is 10
+  minutes.
 
 ## Example
 
