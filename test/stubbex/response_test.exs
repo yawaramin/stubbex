@@ -95,7 +95,7 @@ defmodule Stubbex.ResponseTest do
 
     test "returns error message in stub response body if schema validation fails" do
       real_response = %{body: ~s({"userId": 1, "id": 1, "title": "Title", "completed": "true"})}
-      error_msg = "[{\"Type mismatch. Expected Boolean but got String.\", \"#/completed\"}]"
+      error_msg = ~s([{"Type mismatch. Expected Boolean but got String.", "#/completed"}])
 
       assert {%{"body" => ^error_msg}, _real_response} =
                Response.inject_schema_validation(@stub_response, real_response)
