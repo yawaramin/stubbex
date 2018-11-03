@@ -80,6 +80,7 @@ defmodule Stubbex.Endpoint do
         _from,
         {stub_path, mappings}
       ) do
+    timeout_ms = Application.get_env(:stubbex, :timeout_ms)
     headers = real_host(headers, stub_path)
     url = path_to_url(stub_path)
 
@@ -112,7 +113,7 @@ defmodule Stubbex.Endpoint do
           :reply,
           response |> Response.decode() |> Map.put(:cookie, md5),
           {stub_path, mappings},
-          Application.get_env(:stubbex, :timeout_ms)
+          timeout_ms
         }
 
       Map.has_key?(mappings, md5) ->
@@ -120,7 +121,7 @@ defmodule Stubbex.Endpoint do
           :reply,
           mappings |> Map.get(md5) |> Map.put(:cookie, md5),
           {stub_path, mappings},
-          Application.get_env(:stubbex, :timeout_ms)
+          timeout_ms
         }
 
       File.exists?(file_path) ->
