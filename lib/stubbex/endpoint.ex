@@ -257,8 +257,16 @@ defmodule Stubbex.Endpoint do
   @spec handle_info({:file_event, pid, {String.t(), [atom, ...]}}, state) ::
           {:noreply, state, pos_integer}
   def handle_info({:file_event, _pid, {file_path, events}}, {stub_path, mappings}) do
+    trigger =
+      String.ends_with?(file_path, @json) or
+        Enum.any?(events, fn
+          :modified -> true
+          :deleted -> true
+          _ -> false
+        end)
+
     mappings =
-      if :modified in events and String.ends_with?(file_path, @json) do
+      if trigger do
         Map.delete(mappings, Path.basename(file_path, @json))
       else
         mappings

@@ -232,8 +232,8 @@ Stubbex caches all non-templated (i.e. static) stubs in memory for a
 period of time (by default, ten minutes) to serve the response as fast
 as possible. But you might like to edit an existing stub and immediately
 see the changed response. So, Stubbex will automatically clear its cache
-for a stub when you edit that stub. This helps with iterative
-development.
+for a stub when you edit (or delete) that stub. This helps with
+iterative development.
 
 Note that on Linux and the BSDs you'll need to install `inotify-tools`
 to make instant edits work. See
