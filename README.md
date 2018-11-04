@@ -23,7 +23,7 @@ In other words, Stubbex sets up what Martin Fowler calls a
   * [Editing Existing Stubs](#editing-existing-stubs)
   * [Stubbing Non-Existent Endpoints](#stubbing-non-existent-endpoints)
 * [Templating the Response](#templating-the-response)
-  * [Troubleshooting](#troubleshooting)
+  * [Injecting JSON into Responses](#injecting-json-into-responses)
 * [Validating the Stubs](#validating-the-stubs)
   * [JSON Schema Validation](#json-schema-validation)
 * [Limitations](#limitations)
@@ -341,13 +341,13 @@ Note that Stubbex doesn't cache template stub responses, because these
 might change dynamically with every request (e.g., you might inject the
 current time into the response).
 
-### Troubleshooting
+### Injecting JSON into Responses
 
-Be careful with putting markup in stubs. The templated stub is passed
-through an interpolation engine (EEx), then decoded from a JSON-encoded
-string into an Elixir-native data structure. If for example you miss
-escaping the template stub's body JSON properly (see above for escaping
-examples), you'll get runtime errors from Stubbex that look like this:
+Be careful with putting markup, especially JSON, in stubs. The templated
+stub is passed through an interpolation engine (EEx), then decoded from
+a JSON-encoded string into an Elixir-native data structure. If for
+example you miss escaping the template stub's body JSON properly, you'll
+get runtime errors from Stubbex that look like this:
 
 ```
 [error] GenServer "/stubs/https/jsonplaceholder.typicode.com/todos/1" terminating
@@ -359,6 +359,22 @@ examples), you'll get runtime errors from Stubbex that look like this:
 
 In this case I forgot to escape the double-quotes around the body JSON
 attributes, and Stubbex misinterpreted the result.
+
+To safely escape JSON-encoded strings in responses, you can use the
+`Stubbex.stringify` function in a template tag:
+
+```
+...
+"body": "<%= Stubbex.stringify("""
+  {
+    "userId": 1,
+    "id": 1,
+    "title": "Do the thing",
+    "completed": false
+  }
+  """) %>"
+...
+```
 
 ## Validating the Stubs
 

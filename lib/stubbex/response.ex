@@ -34,7 +34,7 @@ defmodule Stubbex.Response do
         "body" => body
       }) do
     headers =
-      if body == "" do
+      if body === "" do
         headers
       else
         Map.put(headers, "content-length", body |> String.length() |> Integer.to_string())

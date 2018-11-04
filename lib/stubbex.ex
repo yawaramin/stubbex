@@ -1,9 +1,9 @@
 defmodule Stubbex do
-  @moduledoc """
-  Stubbex keeps the contexts that define your domain
-  and business logic.
+  @moduledoc "Convenience functions available under the Stubbex namespace."
 
-  Contexts are also responsible for managing your data, regardless
-  if it comes from the database, an external API or others.
+  @doc """
+  Escapes JavaScript and also JSON-encoded strings so they can be
+  injected into stub responses. See the README for an example.
   """
+  defdelegate stringify(data), to: Phoenix.HTML, as: :escape_javascript
 end
