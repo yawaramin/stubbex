@@ -14,6 +14,7 @@ defmodule Stubbex.ResponseTest do
     "body" => @body
   }
   @content_encoding "content-encoding"
+  @real_body_completed ~s({"userId": 1, "id": 1, "title": "Title", "completed": )
   @stub_response %{
     "body" => %{
       "$schema" => "http://json-schema.org/draft-04/schema#",
@@ -87,14 +88,14 @@ defmodule Stubbex.ResponseTest do
 
   describe "inject_schema_validation" do
     test "returns :ok in real response body if schema validation succeeds" do
-      real_response = %{body: ~s({"userId": 1, "id": 1, "title": "Title", "completed": true})}
+      real_response = %{body: @real_body_completed <> "true}"}
 
       assert {_stub_response, %{body: ":ok"}} =
                Response.inject_schema_validation(@stub_response, real_response)
     end
 
     test "returns error message in stub response body if schema validation fails" do
-      real_response = %{body: ~s({"userId": 1, "id": 1, "title": "Title", "completed": "true"})}
+      real_response = %{body: @real_body_completed <> ~s("true"})}
       error_msg = ~s([{"Type mismatch. Expected Boolean but got String.", "#/completed"}])
 
       assert {%{"body" => ^error_msg}, _real_response} =
