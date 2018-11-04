@@ -79,12 +79,16 @@ endpoints, and specific requests.
 You can either compile and run Stubbex using a local installation of
 Elixir, or download the latest pre-built release tarball from the
 releases page: https://github.com/yawaramin/stubbex/releases . For
-example, say you download `stubbex-N.N.N.tar.gz` and unpack it:
+example, say you download `stubbex-N.N.N-osx.tar.gz` and unpack it:
 
 ```
 ~/src $ mkdir stubbex; cd stubbex
-~/src/stubbex $ tar xzf stubbex-N.N.N.tar.gz
+~/src/stubbex $ tar xzf stubbex-N.N.N-osx.tar.gz
 ```
+
+**Note:** for the moment I'm uploading the binary for only the latest
+release, and only for macOS. The plan is to do releases for other OSs at
+some point!
 
 ### Configuration
 
