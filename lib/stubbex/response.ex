@@ -37,7 +37,7 @@ defmodule Stubbex.Response do
       if body === "" do
         headers
       else
-        Map.put(headers, "content-length", body |> String.length() |> Integer.to_string())
+        Map.put(headers, "content-length", body |> byte_size |> Integer.to_string())
       end
 
     %{

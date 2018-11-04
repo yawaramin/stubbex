@@ -341,6 +341,7 @@ defmodule Stubbex.Endpoint do
     path =
       case String.split(path, Application.fetch_env!(:stubbex, :stubs_dir) <> "/stubs/") do
         ["", path] -> path
+        ["stubs/" <> path] -> path
         ["/stubs/" <> path] -> path
       end
 
