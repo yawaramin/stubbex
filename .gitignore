@@ -17,6 +17,7 @@ erl_crash.dump
 
 .elixir_ls
 .vscode
+cover
 stubs
 priv/static
 rel

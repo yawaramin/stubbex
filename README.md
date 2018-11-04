@@ -91,13 +91,13 @@ example, say you download `stubbex-N.N.N.tar.gz` and unpack it:
 Stubbex has certain configurable options which it reads at startup from
 the system environment. These are:
 
-- `PORT:` mandatory port number, Stubbex will refuse to start up without
+- `PORT`: mandatory port number, Stubbex will refuse to start up without
   it
-- `stubbex_cert_pem:` optional path to a root HTTPS certificate (may be
+- `stubbex_cert_pem`: optional path to a root HTTPS certificate (may be
   needed for making HTTPS requests), default is `/etc/ssl/cert.pem`
-- `stubbex_stubs_dir:` optional path where Stubbex should keep the
+- `stubbex_stubs_dir`: optional path where Stubbex should keep the
   `stubs` directory, default is `.`
-- `stubbex_timeout_ms:` optional numeric value of how long Stubbex
+- `stubbex_timeout_ms`: optional numeric value of how long Stubbex
   should wait for requests and responses, in milliseconds. Default is 10
   minutes.
 
@@ -135,8 +135,9 @@ Now, check the `~/src/stubbex/stubs` subdirectory. There's a new
 directory structure and a stub file there. Take a look:
 
 ```
-~/src/stubbex $ less stubs/https/jsonplaceholder.typicode.com/todos/1/E406D55E4DBB26C8050FCDC3D20B7CAA.json
+~/src/stubbex $ less stubs/https/jsonplaceholder.typicode.com/todos/1/A56255E8FEE7CC38479F0862D6921C04.json
 {
+  "url": "https://jsonplaceholder.typicode.com/todos/1",
   "response": {
     "status_code": 200,
     "headers": {...
@@ -148,7 +149,7 @@ viewing pleasure.
 
 ## The Hash
 
-Notice the file name of the stub, `E406D55E....json`. That's an MD5-
+Notice the file name of the stub, `A56255E8....json`. That's an MD5-
 encoded hash of the request details:
 
 * Method (GET, POST, etc.)
@@ -257,6 +258,7 @@ implemented) status_ and an empty body:
 ```
 ~/src/stubbex $ less stubs/http/bla/FC4443CF188F5039AB8C6C96FC500EB9.json
 {
+  "url": "http://bla",
   "response": {
     "status_code": 501,
     "headers": {},
@@ -375,6 +377,15 @@ To safely escape JSON-encoded strings in responses, you can use the
   """) %>"
 ...
 ```
+
+The basic structure here is: `"body": "<%= (Elixir string expression) %>"`,
+and the `(Elixir string expression)` is injected into the final response
+by the templating engine. The `Stubbex.stringify` is a normal Elixir
+function call, and the triple double-quotes are used to (a) do the
+initial escaping of the double-quotes in the JSON body, and (b) get rid
+of leading whitespace (in fact all leading whitespace from every line in
+the triple-quoted string _to the left of the closing triple-quote_ will
+be removed).
 
 ## Validating the Stubs
 
