@@ -507,7 +507,8 @@ erroring attribute.
 
 ## Limitations
 
-* Not enough tests right now (run with `mix test.watch --stale` for
-  continuous iterate-and-run cycle)
+* Not enough tests right now (run with
+  `stubbex_stubs_dir=test mix test.watch --stale` for continuous
+  iterate-and-run cycle)
 * No benchmarks right now
 
