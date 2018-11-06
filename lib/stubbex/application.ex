@@ -34,13 +34,20 @@ defmodule Stubbex.Application do
     # How long should Stubbex wait for requests and responses?
     timeout_ms = System.get_env("stubbex_timeout_ms")
     config_int(:timeout_ms, timeout_ms, "600000")
+
+    # Should Stubbex not make network requests?
+    config_boolean(:offline, System.get_env("stubbex_offline"), "false")
   end
 
   defp config(key, value, default) do
-    Application.put_env(:stubbex, key, value || default, persistent: true)
+    Application.put_env(:stubbex, key, value || default)
   end
 
   defp config_int(key, value, default) do
-    Application.put_env(:stubbex, key, String.to_integer(value || default), persistent: true)
+    Application.put_env(:stubbex, key, String.to_integer(value || default))
+  end
+
+  defp config_boolean(key, value, default) do
+    Application.put_env(:stubbex, key, String.to_existing_atom(value || default))
   end
 end

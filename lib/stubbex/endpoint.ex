@@ -34,7 +34,7 @@ defmodule Stubbex.Endpoint do
     GenServer.call(
       {:global, stub_path},
       {:stub, method, query_string, headers, body},
-      Application.get_env(:stubbex, :timeout_ms)
+      Application.fetch_env!(:stubbex, :timeout_ms)
     )
   end
 
@@ -44,12 +44,12 @@ defmodule Stubbex.Endpoint do
       {:global, stub_path},
       {:validations, conn,
        Path.join([
-         Application.get_env(:stubbex, :stubs_dir),
+         Application.fetch_env!(:stubbex, :stubs_dir),
          stub_path,
          "**",
          "*.{json,json.eex,json.schema}"
        ])},
-      Application.get_env(:stubbex, :timeout_ms)
+      Application.fetch_env!(:stubbex, :timeout_ms)
     )
   end
 
@@ -62,7 +62,7 @@ defmodule Stubbex.Endpoint do
 
     {:ok, watcher} =
       FileSystem.start_link(
-        dirs: [Path.join(Application.get_env(:stubbex, :stubs_dir), stub_path)]
+        dirs: [Path.join(Application.fetch_env!(:stubbex, :stubs_dir), stub_path)]
       )
 
     FileSystem.subscribe(watcher)
@@ -78,9 +78,9 @@ defmodule Stubbex.Endpoint do
   def handle_call(
         {:stub, method, query_string, headers, body},
         _from,
-        {stub_path, mappings}
+        {stub_path, mappings} = state
       ) do
-    timeout_ms = Application.get_env(:stubbex, :timeout_ms)
+    timeout_ms = Application.fetch_env!(:stubbex, :timeout_ms)
     headers = real_host(headers, stub_path)
     url = path_to_url(stub_path)
 
@@ -99,7 +99,7 @@ defmodule Stubbex.Endpoint do
       |> Base.encode16()
 
     file_path =
-      [Application.get_env(:stubbex, :stubs_dir), stub_path, md5 <> @json]
+      [Application.fetch_env!(:stubbex, :stubs_dir), stub_path, md5 <> @json]
       |> Path.join()
       |> String.replace("//", "/")
 
@@ -128,6 +128,9 @@ defmodule Stubbex.Endpoint do
         %{"response" => response} = file_path |> File.read!() |> Stub.get_stub()
         reply_update(Response.decode(response), stub_path, mappings, md5)
 
+      Application.fetch_env!(:stubbex, :offline) ->
+        {:reply, {:error, "Stubbex is offline!"}, state, timeout_ms}
+
       true ->
         response =
           method
@@ -149,7 +152,9 @@ defmodule Stubbex.Endpoint do
                |> Map.put(:response, Response.encode(response))
                |> Poison.encode_to_iodata(@pretty_opts),
              :ok <-
-               Application.get_env(:stubbex, :stubs_dir) |> Path.join(stub_path) |> File.mkdir_p(),
+               Application.fetch_env!(:stubbex, :stubs_dir)
+               |> Path.join(stub_path)
+               |> File.mkdir_p(),
              :ok <- File.write(file_path, file_body) do
           nil
         else
@@ -250,7 +255,7 @@ defmodule Stubbex.Endpoint do
         end
       end)
 
-    {:reply, conn, state, Application.get_env(:stubbex, :timeout_ms)}
+    {:reply, conn, state, Application.fetch_env!(:stubbex, :timeout_ms)}
   end
 
   @impl true
@@ -272,7 +277,7 @@ defmodule Stubbex.Endpoint do
         mappings
       end
 
-    {:noreply, {stub_path, mappings}, Application.get_env(:stubbex, :timeout_ms)}
+    {:noreply, {stub_path, mappings}, Application.fetch_env!(:stubbex, :timeout_ms)}
   end
 
   @impl true
@@ -293,7 +298,7 @@ defmodule Stubbex.Endpoint do
       :reply,
       Map.put(response, :cookie, md5),
       {stub_path, Map.put(mappings, md5, response)},
-      Application.get_env(:stubbex, :timeout_ms)
+      Application.fetch_env!(:stubbex, :timeout_ms)
     }
   end
 
@@ -306,10 +311,10 @@ defmodule Stubbex.Endpoint do
              url_query(stub_path, query_string),
              body,
              headers,
-             recv_timeout: Application.get_env(:stubbex, :timeout_ms),
+             recv_timeout: Application.fetch_env!(:stubbex, :timeout_ms),
              # See https://github.com/edgurgel/httpoison/issues/294 for
              # more
-             ssl: [cacertfile: Application.get_env(:stubbex, :cert_pem)]
+             ssl: [cacertfile: Application.fetch_env!(:stubbex, :cert_pem)]
            ) do
       headers =
         Enum.flat_map(headers, fn

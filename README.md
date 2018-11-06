@@ -104,6 +104,10 @@ the system environment. These are:
 - `stubbex_timeout_ms`: optional numeric value of how long Stubbex
   should wait for requests and responses, in milliseconds. Default is 10
   minutes.
+- `stubbex_offline`: optional boolean value of whether Stubbex should
+  record new stubs or not, default is `false`. If `true`, any stub call
+  that ends up needing to record a new stub, will fail and show client-
+  side as an Internal Server Error.
 
 ## Example
 
