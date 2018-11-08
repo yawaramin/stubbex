@@ -10,7 +10,7 @@ defmodule Stubbex.Endpoint do
   """
   @type stub :: %{
           body: binary,
-          headers: Response.headers(),
+          headers: Plug.Conn.headers(),
           cookie: md5,
           status_code: Response.status_code()
         }
@@ -29,7 +29,7 @@ defmodule Stubbex.Endpoint do
     GenServer.start_link(__MODULE__, stub_path, name: {:global, stub_path})
   end
 
-  @spec stub(String.t(), String.t(), String.t(), Response.headers(), String.t()) :: stub
+  @spec stub(String.t(), String.t(), String.t(), Plug.Conn.headers(), String.t()) :: stub
   def stub(method, stub_path, query_string \\ "", headers \\ [], body \\ "") do
     GenServer.call(
       {:global, stub_path},
@@ -71,7 +71,7 @@ defmodule Stubbex.Endpoint do
 
   @impl true
   @spec handle_call(
-          {:stub, String.t(), String.t(), Response.headers(), binary},
+          {:stub, String.t(), String.t(), Plug.Conn.headers(), binary},
           GenServer.from(),
           state
         ) :: {:reply, Response.t(), state, pos_integer}
@@ -88,7 +88,7 @@ defmodule Stubbex.Endpoint do
       method: method,
       url: url,
       query_string: query_string,
-      headers: Map.new(headers),
+      headers: Enum.map(headers, &Tuple.to_list/1),
       body: body
     }
 
@@ -218,6 +218,8 @@ defmodule Stubbex.Endpoint do
           else
             Stub.get_stub(contents)
           end
+
+        headers = Enum.map(headers, &List.to_tuple/1)
 
         header = [
           :inverse,

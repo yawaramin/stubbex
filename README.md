@@ -316,7 +316,7 @@ You can set the todo to be automatically completed if we're past 2017:
 Or you can use the user-agent header as part of the todo title:
 
 ```
-"body": "{\n  \"userId\": 1,\n  \"id\": 1,\n  \"title\": \"User agent: <%= headers["user-agent"] %>\",\n  \"completed\": false\n}"
+"body": "{\n  \"userId\": 1,\n  \"id\": 1,\n  \"title\": \"User agent: <%= headers |> Stubbex.header_values("user-agent") |> List.first %>\",\n  \"completed\": false\n}"
 ```
 
 Then if you get the response again (with the `curl` command in
@@ -330,8 +330,12 @@ Request parameters are available under the following names:
 * `url`: string
 * `query_string`: string
 * `method`: string
-* `headers`: map of string keys (header names) to string values; you can
-  get values with `headers["header-name"]` (all lowercase) syntax
+* `headers`: list of pairs of string keys (header names) and string
+  values; you can get values with
+  `Stubbex.header_values("user-agent")` (all lowercase) syntax. Note
+  that this will return a list of header values (because HTTP headers
+  may be duplicated), and you'll probably want to get the first value
+  with `List.first(...)` as shown above
 * `body`: string
 
 There are many other useful data manipulation functions in the [Elixir

@@ -4,20 +4,25 @@ defmodule Stubbex.Response do
   JSON-suitable storage format.
   """
 
-  @type t :: %{body: binary, headers: headers, status_code: status_code()}
-  @type headers :: [{String.t(), String.t()}]
-  @type headers_map :: %{required(String.t()) => String.t()}
+  @type t :: %{body: binary, headers: Plug.Conn.headers(), status_code: status_code()}
+
+  @typedoc """
+  Actually this is a list of pairs of strings (each pair being a two-
+  element list), but the typespec doesn't allow expressing that.
+  """
+  @type headers_list :: [[String.t()]]
+
   @type status_code :: 100..599
   @typep json_map :: %{required(String.t()) => String.t()}
   @typep response_body :: %{:body => binary, optional(any) => any}
 
   @content_gzip {"content-encoding", "gzip"}
 
-  @spec encode(t) :: %{body: binary, headers: headers_map, status_code: status_code}
+  @spec encode(t) :: %{body: binary, headers: Plug.Conn.headers(), status_code: status_code}
   def encode(%{headers: headers, body: body} = response) do
     %{
       response
-      | headers: Map.new(headers),
+      | headers: Enum.map(headers, &Tuple.to_list/1),
         body:
           if @content_gzip in headers do
             Base.encode64(body)
@@ -33,23 +38,24 @@ defmodule Stubbex.Response do
         "headers" => headers,
         "body" => body
       }) do
+    headers = Enum.map(headers, &List.to_tuple/1)
+
+    body =
+      if @content_gzip in headers do
+        Base.decode64!(body)
+      else
+        body
+      end
+
     headers =
       if body === "" do
         headers
       else
-        Map.put(headers, "content-length", body |> byte_size |> Integer.to_string())
+        length = body |> byte_size |> Integer.to_string()
+        List.keystore(headers, "content-length", 0, {"content-length", length})
       end
 
-    %{
-      status_code: status_code,
-      headers: Map.to_list(headers),
-      body:
-        if @content_gzip in headers do
-          Base.decode64!(body)
-        else
-          body
-        end
-    }
+    %{status_code: status_code, headers: headers, body: body}
   end
 
   @doc """

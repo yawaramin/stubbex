@@ -7,7 +7,7 @@ defmodule Stubbex.ResponseTest do
   @headers []
   @response %{status_code: @status_code, headers: @headers, body: @body}
 
-  @encoded_headers %{}
+  @encoded_headers []
   @encoded_response %{
     "status_code" => @status_code,
     "headers" => @encoded_headers,
@@ -78,12 +78,29 @@ defmodule Stubbex.ResponseTest do
       response =
         Response.decode(%{
           @encoded_response
-          | "headers" => %{@content_encoding => "gzip"},
+          | "headers" => [[@content_encoding, "gzip"]],
             "body" => gzipped_body
         })
 
       assert response.body === @body
     end
+  end
+
+  test "encode / decode roundtrip preserves entire response" do
+    response = %{
+      @response
+      | headers: [
+          {"set-cookie", "a=1"},
+          {"set-cookie", "b=2"},
+          {"content-length", "1"}
+        ]
+    }
+
+    assert response
+           |> Response.encode()
+           |> Poison.encode_to_iodata!()
+           |> Poison.decode!()
+           |> Response.decode() === response
   end
 
   describe "inject_schema_validation" do
