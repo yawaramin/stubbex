@@ -16,7 +16,7 @@ defmodule StubbexWeb.StubController do
       )
 
     conn
-    |> Map.put(:resp_headers, [{"set-cookie", cookie} | headers])
+    |> Map.put(:resp_headers, [{"set-cookie", "stubbex=" <> cookie} | headers])
     |> send_resp(status_code, body)
   end
 
