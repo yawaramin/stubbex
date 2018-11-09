@@ -2,8 +2,8 @@ defmodule Stubbex.Dispatcher do
   use DynamicSupervisor
   alias Stubbex.Endpoint
 
-  @spec start_link() :: :ignore | {:error, any()} | {:ok, pid()}
-  def start_link() do
+  @spec start_link(DynamicSupervisor.options()) :: :ignore | {:error, any()} | {:ok, pid()}
+  def start_link(_opts) do
     DynamicSupervisor.start_link(__MODULE__, [], name: __MODULE__)
   end
 

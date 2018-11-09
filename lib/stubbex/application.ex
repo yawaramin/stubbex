@@ -4,16 +4,10 @@ defmodule Stubbex.Application do
   # See https://hexdocs.pm/elixir/Application.html
   # for more information on OTP Applications
   def start(_type, _args) do
-    import Supervisor.Spec
+    children = [Stubbex.Dispatcher, StubbexWeb.Endpoint]
 
-    children = [
-      supervisor(Stubbex.Dispatcher, []),
-      supervisor(StubbexWeb.Endpoint, [])
-    ]
-
-    opts = [strategy: :one_for_one, name: Stubbex.Supervisor]
     config()
-    Supervisor.start_link(children, opts)
+    Supervisor.start_link(children, strategy: :one_for_one, name: Stubbex.Supervisor)
   end
 
   # Tell Phoenix to update the endpoint configuration
