@@ -1,5 +1,5 @@
 defmodule StubbexWeb.StubControllerTest do
-  use StubbexWeb.ConnCase
+  use StubbexWeb.ConnCase, async: true
 
   @bla "/stubs/http/bla"
 
@@ -7,9 +7,15 @@ defmodule StubbexWeb.StubControllerTest do
   # excluded by running
   # `stubbex_stubs_dir=test mix test --exclude network:true`
 
-  test "a non-existent endpoint should return a 'not implemented' response", %{conn: conn} do
+  setup do
+    File.rm_rf!("test/stubs")
+    %{state: nil}
+  end
+
+  test "a non-existent endpoint should return a 'not implemented' response with the stub path in the body",
+       %{conn: conn} do
     conn = get conn, @bla
-    assert response(conn, 501) === ""
+    assert response(conn, 501) === "test/stubs/http/bla/3D06F3E29609E6376BFE56ECEB697C61.json"
   end
 
   test "stubs must have 'stubbex' cookie set", %{conn: conn} do

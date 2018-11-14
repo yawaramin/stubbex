@@ -141,7 +141,7 @@ defmodule Stubbex.Endpoint do
 
             {:error, %HTTPoison.Error{}} ->
               %{
-                body: "",
+                body: file_path,
                 headers: [],
                 status_code: 501
               }
