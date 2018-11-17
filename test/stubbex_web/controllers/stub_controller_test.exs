@@ -1,5 +1,5 @@
 defmodule StubbexWeb.StubControllerTest do
-  use StubbexWeb.ConnCase, async: true
+  use StubbexWeb.ConnCase
 
   @bla "/stubs/http/bla"
 
@@ -26,6 +26,9 @@ defmodule StubbexWeb.StubControllerTest do
              _else -> false
            end)
   end
+
+  # Tests that make network calls can be run with:
+  # `stubbex_stubs_dir=test mix test --only network:true`
 
   @tag :network
   test "an existing endpoint should return an 'ok' response", %{conn: conn} do

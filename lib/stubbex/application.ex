@@ -1,8 +1,6 @@
 defmodule Stubbex.Application do
   use Application
 
-  # See https://hexdocs.pm/elixir/Application.html
-  # for more information on OTP Applications
   def start(_type, _args) do
     children = [Stubbex.Dispatcher, StubbexWeb.Endpoint]
 
@@ -20,28 +18,27 @@ defmodule Stubbex.Application do
   defp config() do
     # We need to read the system's SSL root cert, because the Erlang/
     # Elixir HTTP stack may not ship with paths to certain signing certs.
-    config(:cert_pem, System.get_env("stubbex_cert_pem"), "/etc/ssl/cert.pem")
+    config(:cert_pem, System.get_env("stubbex_cert_pem") || "/etc/ssl/cert.pem")
 
     # Where should Stubbex put its `stubs/...` directory hierarchy?
-    config(:stubs_dir, System.get_env("stubbex_stubs_dir"), ".")
+    config(:stubs_dir, System.get_env("stubbex_stubs_dir") || ".")
 
     # How long should Stubbex wait for requests and responses?
     timeout_ms = System.get_env("stubbex_timeout_ms")
-    config_int(:timeout_ms, timeout_ms, "600000")
+    config(:timeout_ms, timeout_ms || "600000", &String.to_integer/1)
 
     # Should Stubbex not make network requests?
-    config_boolean(:offline, System.get_env("stubbex_offline"), "false")
+    config(:offline, System.get_env("stubbex_offline") || "false", &String.to_existing_atom/1)
   end
 
-  defp config(key, value, default) do
-    Application.put_env(:stubbex, key, value || default)
-  end
+  defp config(key, value, transform \\ nil) do
+    value =
+      if transform do
+        transform.(value)
+      else
+        value
+      end
 
-  defp config_int(key, value, default) do
-    Application.put_env(:stubbex, key, String.to_integer(value || default))
-  end
-
-  defp config_boolean(key, value, default) do
-    Application.put_env(:stubbex, key, String.to_existing_atom(value || default))
+    Application.put_env(:stubbex, key, value)
   end
 end
